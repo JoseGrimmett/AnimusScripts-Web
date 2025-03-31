@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Karla:ital,wght@0,200..800;1,200..800&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Oswald:wght@200..700&display=swap');
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Oswald", sans-serif;
+}
+body{
+    background: #ffffff;
+}
+a{
+    text-decoration: none;
+    color: inherit;
+    line-height: 1;
+    cursor: pointer;
+}
+.container{
+    padding-left: 10%;
+    padding-right: 10%;
+}
+button{
+    background: #fff;
+    color: #ffffff;
+    padding: 14px 25px;
+    font-size:  16px;
+    border-radius: 30px;
+    cursor: pointer;
+    border: 0;
+    outline: 0;
+}
+.btn{
+    background: #ffffff;
+    color: #1d1c1c;
+    padding: 8px 15px;
+    font-size:  16px;
+    border-radius: 30px;
+    cursor: pointer;
+    border: 0;
+    outline: 0;
+    display: inline-flex;
+    align-items:center;
+    justify-content: center;
+}
+
+.btn img {
+    width: 20px;
+    margin-left: 10px;
+}
+.btn.dark-btn{
+    background: #494949;
+    color: #fff;
+
+}
+/* mmeida query */
+@media (max-width: 1200px){
+    .container{
+        padding-left:  5%;
+        padding-right: 5%;
+    }
+    .btn{
+        padding: 14px 22px;
+        
+    }
+}

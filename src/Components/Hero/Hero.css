@@ -1,0 +1,50 @@
+.hero{
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(rgba(4, 29, 39, 0.7),rgba(82, 82, 99, 0.7)), url('./src/assets/BG.jpg');
+    background-size: cover;
+    background-position: center;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+.hero-box{
+    
+    background: linear-gradient(rgba(30, 148, 207, 0),rgba(74, 76, 87, 0.7))
+}
+.hero-text{
+    text-align: center;
+    max-width: 800px;
+}
+.hero-text-h1{
+    font-size: 60px;
+    font-weight: 600px;
+}
+
+.hero-text p{
+    max-width: 700px;
+    margin: 10px auto 20px;
+    line-height: 1.4;
+}
+
+/* media query */
+@media (max-width: 850px){
+    .hero-text h1 {
+        font-size: 40px;
+
+    }
+}
+@media (max-width: 650px){
+    .hero-text h1 {
+        font-size: 30px;
+        max-width: 400px;
+        margin: auto;
+        
+    }
+    .hero-text p{
+        font-size: 14px;
+        margin: 15px auto 30px;
+    }
+}
