@@ -1,7 +1,7 @@
 import React from "react";
 import './Programs.css'
 import CRM from "../../assets/CRM.jpg"
-import SwitchPIC from "../../assets/switch.jpg"
+import SwitchPIC from "../../assets/Switch.jpg"
 import WebDev from "../../assets/webdev.jpg"
 const Programs = () => {
   return (
@@ -10,14 +10,14 @@ const Programs = () => {
         <img src={CRM} alt= "" />
         <div className="caption"> 
           <img src="./src/assets/AnimusSciptsLogo.png" alt="" />
-          <p> CRM </p>
+          <p> Mobile Applications </p>
         </div>
       </div>
       <div className="program">
         <img src={WebDev} alt= "" />
         <div className="caption"> 
           <img src="./src/assets/AnimusSciptsLogo.png" alt="" />
-          <p> Web Design </p>
+          <p> Web Development </p>
         </div>
       </div>
       <div className="program">
