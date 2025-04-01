@@ -1,5 +1,9 @@
 import React, { useReducer, useRef } from 'react'
 import './Testimonials.css'
+import ProfileIcon from "../../assets/profilepic.jpg"
+import rightArrow from "../../assets/right.png"
+import leftArrow from "../../assets/arrow.png"
+
 const Testimonials = () => {
     const slider = useRef();
     let tx= 0;
@@ -21,14 +25,14 @@ const slideBackward = ()=>{
     return (
 
     <div className='testimonials'>
-        <img src='src/assets/right.png' alt='' className='next-btn'  onClick={slideForward}/>
-        <img src='src/assets/arrow.png' alt='' className='back-btn'  onClick={slideBackward}/>
+        <img src={rightArrow} alt='' className='next-btn'  onClick={slideForward}/>
+        <img src={leftArrow} alt='' className='back-btn'  onClick={slideBackward}/>
         <div className="slider"> 
             <ul ref={slider}>
                 <li>
                     <div className='slide' >
                         <div className='user-info'>
-                            <img src="src/assets/profilepic.jpg" alt='' /> 
+                            <img src={ProfileIcon} alt='' /> 
                             <div>
                                 <h3> Jone Doe </h3>
                                 <span> Warsaw, Indiana </span>
@@ -40,7 +44,7 @@ const slideBackward = ()=>{
                 <li>
                     <div className='slide' >
                         <div className='user-info'>
-                            <img src="src/assets/profilepic.jpg" alt='' /> 
+                            <img src={ProfileIcon} alt='' /> 
                             <div>
                                 <h3> Jone Doe </h3>
                                 <span> Warsaw, Indiana </span>
@@ -52,7 +56,7 @@ const slideBackward = ()=>{
                 <li>
                     <div className='slide' >
                         <div className='user-info'>
-                            <img src="src/assets/profilepic.jpg" alt='' /> 
+                            <img src={ProfileIcon} alt='' /> 
                             <div>
                                 <h3> Jone Doe </h3>
                                 <span> Warsaw, Indiana </span>
@@ -64,7 +68,7 @@ const slideBackward = ()=>{
                 <li>
                     <div className='slide' >
                         <div className='user-info'>
-                            <img src="src/assets/profilepic.jpg" alt='' /> 
+                            <img src={ProfileIcon} alt='' /> 
                             <div>
                                 <h3> Jone Doe </h3>
                                 <span> Warsaw, Indiana </span>

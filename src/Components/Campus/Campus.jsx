@@ -1,16 +1,17 @@
 import React from 'react'
 import './Campus.css'
+import Webicon from "../../assets/AnimusSciptsLogo.png"
 const Campus = () => {
   return (
     <div className='campus'>
         <div className='gallery'>
-            <img src= 'src/assets/AnimusSciptsLogo.png' alt='' />
-            <img src='src/assets/AnimusSciptsLogo.png' alt='' />
-            <img src='src/assets/AnimusSciptsLogo.png' alt='' />
-            <img src='src/assets/AnimusSciptsLogo.png' alt='' />
+            <img src= {Webicon} alt='' />
+            <img src={Webicon} alt='' />
+            <img src={Webicon} alt='' />
+            <img src={Webicon} alt='' />
 
         </div>
-        <button className='btn dark-btn' >See More Here <img src='src\assets\react.svg' alt='' /></button>
+        <button className='btn dark-btn' >See More Here <img src={Webicon} alt='' /></button>
     </div>
   )
 }
