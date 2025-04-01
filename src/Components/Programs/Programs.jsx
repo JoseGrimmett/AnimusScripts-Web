@@ -2,7 +2,7 @@ import React from "react";
 import './Programs.css'
 import CRM from "../../assets/CRM.jpg"
 import SwitchPIC from "../../assets/Switch.jpg"
-import WebDev from "../../assets/webdev.jpg"
+import WebDev from "../../assets/WebDev.jpg"
 const Programs = () => {
   return (
     <div className="programs">
