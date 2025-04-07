@@ -17,7 +17,7 @@ const Hero = () => {
           committed to delivering high-quality, customized software that drives
           success.
         </p>
-        <button className="btn">Learn More</button>
+        {/* <button className="btn">Learn More</button> */}
       </div>
       </div>
     </div>
