@@ -51,12 +51,10 @@
         flex-direction: column;
     }
     .program {
-        max-width: 100px;
+        max-width: 200px;
         margin: 20px;
     }
-    .caption{
-        color: #1b1b1b;
-        }
+
         
     
 }
