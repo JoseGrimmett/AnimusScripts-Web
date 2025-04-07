@@ -11,7 +11,7 @@
 
 }
 .hero-box{
-    
+    border-radius: 15px;
     background: linear-gradient(rgba(30, 148, 207, 0),rgba(74, 76, 87, 0.7))
 }
 .hero-text{

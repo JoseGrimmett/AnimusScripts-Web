@@ -12,9 +12,8 @@ const About = ({setPlayState}) => {
         <div className='about-right'>
             <h3>About Animus Scripts</h3>
             <h2>Leaders of Tommorrow</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-            <p>Wabash Alumni</p>
-            <p>More text</p>
+            <p>Founded in 2025, Animus Scripts is a forward-thinking software contracting company established by a Wabash College graduate with a degree in Computer Science. With a strong foundation in IT and hands-on experience in developing CRM mobile applications and web-based ERP systems, Animus Scripts brings innovation, precision, and efficiency to every project.</p>
+            <p>Driven by a passion for technology and a commitment to excellence, we aim to lead the future of software development—empowering businesses with tailored digital solutions that scale and perform.</p>
         </div>
     </div>
   )

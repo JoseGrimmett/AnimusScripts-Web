@@ -18,7 +18,7 @@ const Programs = () => {
         <img src={WebDev} alt= "" />
         <div className="caption"> 
           <img src={Webicon} alt="" />
-          <p> Web Development </p>
+          <p> Web Application Development </p>
         </div>
       </div>
       <div className="program">
@@ -30,6 +30,6 @@ const Programs = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Programs;
