@@ -35,8 +35,8 @@ const Contact = () => {
             <h3>Send us a message <img src={msg_icon}alt=''/></h3>
             <p>Feel free to reach out through contact form or find our contact infromation below. Your feedback, questions, and suggestions are important to us as we strive to provide exceptional service to our customers!</p>
             <ul>
-                <li><img src={msg_icon} alt="" />Contact@AnimusScipts.com</li>
-                <li><img src={msg_icon} alt="" />+1 234-567-8910</li>
+                <li><img src={msg_icon} alt="" />ljgrimmett1216@outlook.com</li>
+                <li><img src={msg_icon} alt="" />+1 547-376-9568 </li>
                 <li><img src={msg_icon} alt="" />Warsaw, Indiana</li>
             </ul>
         </div>
