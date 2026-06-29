@@ -1,0 +1,29 @@
+<svg width="1200" height="820" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="820" rx="40" fill="#07111F"/>
+  <rect x="70" y="70" width="1060" height="680" rx="30" stroke="#F5F7FB" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="118" y="140" width="430" height="260" rx="28" fill="#0D1628" stroke="#7AA2FF" stroke-opacity="0.26" stroke-width="2"/>
+  <path d="M156 338C220 280 292 252 354 252C402 252 426 268 466 318" stroke="#7AA2FF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M154 370C226 332 286 320 352 320C410 320 460 336 500 364" stroke="#80BDB4" stroke-width="4" stroke-linecap="round"/>
+  <rect x="166" y="176" width="118" height="12" rx="6" fill="#7AA2FF"/>
+  <rect x="166" y="206" width="214" height="10" rx="5" fill="#F5F7FB" fill-opacity="0.2"/>
+  <rect x="166" y="230" width="186" height="10" rx="5" fill="#F5F7FB" fill-opacity="0.14"/>
+  <rect x="166" y="280" width="102" height="30" rx="15" fill="#80BDB4"/>
+  <rect x="282" y="280" width="98" height="30" rx="15" stroke="#F5F7FB" stroke-opacity="0.22"/>
+  <rect x="616" y="144" width="466" height="360" rx="30" fill="#0D1628" stroke="#4A6CF4" stroke-opacity="0.26" stroke-width="2"/>
+  <circle cx="850" cy="324" r="122" fill="url(#paint0_radial)"/>
+  <path d="M770 319C796 272 838 244 890 244C938 244 976 270 1002 318" stroke="#7AA2FF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M776 370C814 338 858 326 906 326C946 326 978 340 1008 368" stroke="#80BDB4" stroke-width="4" stroke-linecap="round"/>
+  <rect x="118" y="448" width="964" height="168" rx="26" fill="#0D1628" stroke="#F5F7FB" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="160" y="492" width="212" height="12" rx="6" fill="#7AA2FF"/>
+  <rect x="160" y="522" width="300" height="10" rx="5" fill="#F5F7FB" fill-opacity="0.2"/>
+  <rect x="160" y="548" width="246" height="10" rx="5" fill="#F5F7FB" fill-opacity="0.14"/>
+  <path d="M690 520H930" stroke="#7AA2FF" stroke-opacity="0.4" stroke-width="3" stroke-linecap="round"/>
+  <path d="M690 548H900" stroke="#80BDB4" stroke-opacity="0.4" stroke-width="3" stroke-linecap="round"/>
+  <path d="M690 576H864" stroke="#F5F7FB" stroke-opacity="0.14" stroke-width="3" stroke-linecap="round"/>
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(850 324) rotate(90) scale(122)">
+      <stop stop-color="#4A6CF4" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#4A6CF4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

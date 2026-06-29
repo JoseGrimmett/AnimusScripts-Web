@@ -3,13 +3,16 @@ import './Footer.css'
 
 const Footer = () => {
   return (
-    <div className='footer'>
-       <p>@2025 Animus Scripts. All rights reserved.</p>
-       <ul>
-        <li>Terms of Service</li>
-        <li>Privacy Policy</li>
-        </ul> 
-    </div>
+    <footer className='footer'>
+      <div>
+        <p>© 2025 Animus Scripts. Premium software, thoughtfully delivered.</p>
+        <p className="footer-sub">Built for teams that care about product quality and long-term clarity.</p>
+      </div>
+      <ul>
+        <li><a href="mailto:hello@animusscripts.com">Email</a></li>
+        <li><a href="#contact">Book a call</a></li>
+      </ul>
+    </footer>
   )
 }
 

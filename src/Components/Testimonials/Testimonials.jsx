@@ -1,4 +1,4 @@
-import React, { useReducer, useRef } from 'react'
+import React, { useRef } from 'react'
 import './Testimonials.css'
 import ProfileIcon from "../../assets/profilepic.jpg"
 import rightArrow from "../../assets/right.png"

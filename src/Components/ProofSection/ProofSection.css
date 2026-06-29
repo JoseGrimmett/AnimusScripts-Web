@@ -1,0 +1,147 @@
+.proof-section {
+  margin: 3.5rem 0 4rem;
+  padding: 1rem 0 0;
+}
+
+.proof-intro {
+  max-width: 760px;
+  margin-bottom: 1.35rem;
+}
+
+.proof-intro p:first-child {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.45rem;
+}
+
+.proof-intro h2 {
+  font-size: clamp(1.6rem, 2.15vw, 2.15rem);
+  margin-bottom: 0.6rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.proof-copy {
+  color: rgba(248, 250, 252, 0.76);
+  line-height: 1.75;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.proof-card {
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius-card);
+  background: var(--surface-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.proof-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #f8fafc;
+}
+
+.proof-card span {
+  color: rgba(248, 250, 252, 0.72);
+  line-height: 1.55;
+}
+
+.proof-outcomes {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1rem;
+}
+
+.proof-outcomes-card {
+  padding: 1.1rem 1.15rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.proof-outcomes-card h3 {
+  margin-bottom: 0.65rem;
+}
+
+.proof-outcomes-card ul {
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.proof-outcomes-card li {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.accent-card {
+  background: linear-gradient(135deg, rgba(89, 168, 255, 0.12), rgba(124, 77, 255, 0.12));
+}
+
+.proof-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 1.15rem;
+  margin-top: 1rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.proof-cta p {
+  margin: 0;
+  color: rgba(248, 250, 252, 0.82);
+}
+
+@media (max-width: 900px) {
+  .proof-grid,
+  .proof-outcomes {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .proof-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .testimonial-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.testimonial-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.testimonial-card {
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.testimonial-card p {
+  color: rgba(248, 250, 252, 0.8);
+  line-height: 1.7;
+  margin-bottom: 0.55rem;
+}
+
+.testimonial-card strong {
+  color: var(--accent);
+}

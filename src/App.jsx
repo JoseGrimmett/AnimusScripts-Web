@@ -1,38 +1,28 @@
-import React, { useState } from "react";
+import React from "react";
 import NavBar from "./Components/NavBar/NavBar";
 import Hero from "./Components/Hero/Hero";
 import Programs from "./Components/Programs/Programs";
-import Title from "./Components/Title/Title";
-import About from "./Components/About/About";
-import Campus from "./Components/Campus/Campus";
-import Testimonials from "./Components/Testimonials/Testimonials";
+import ProofSection from "./Components/ProofSection/ProofSection";
 import Contact from "./Components/Contact/Contact";
 import Footer from "./Components/Footer/Footer";
-import VideoPlayer from "./Components/VideoPlayer/VideoPlayer";
-
-
+import TrustSection from "./Components/TrustSection/TrustSection";
+import DeliveryChecklist from "./Components/DeliveryChecklist/DeliveryChecklist";
+import PackageCTA from "./Components/PackageCTA/PackageCTA";
 
 const App = () => {
-  const [playState, setPlayState] = useState(false);
-
   return (
     <div>
-      
       <NavBar />
       <Hero />
       <div className="container">
-        <Title subTitle='Our Solutions' title='What We Offer'/>
+        <ProofSection />
         <Programs />
-        <About setPlayState={setPlayState}/>
-        {/*<Title subTitle='Gallery' title='Projects'/> 
-        <Campus /> */}
-        {/*<Title subTitle='Testimonials' title='Annyomous Quotes'/>
-        <Testimonials /> */}
-        <Title subTitle='Contact us' title='Get in Touch'/>
+        <DeliveryChecklist />
+        <PackageCTA />
+        <TrustSection />
         <Contact/>
         <Footer />
       </div>
-     <VideoPlayer playState={playState} setPlayState={setPlayState}/>
     </div>
   );
 };

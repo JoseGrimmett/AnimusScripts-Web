@@ -1,0 +1,130 @@
+.services-page {
+  padding-top: 5.5rem;
+}
+
+.services-hero {
+  padding: 4.5rem 0 3.2rem;
+  background:
+    radial-gradient(circle at top left, rgba(122, 162, 255, 0.16), transparent 30%),
+    linear-gradient(135deg, rgba(7, 16, 30, 0.95), rgba(15, 23, 42, 0.78));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.services-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.3rem;
+}
+
+.services-brand img {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.services-brand p {
+  font-weight: 700;
+}
+
+.services-brand span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.services-hero h1 {
+  max-width: 840px;
+  font-size: clamp(2rem, 3.55vw, 2.9rem);
+  line-height: 1.12;
+  margin-bottom: 0.9rem;
+  letter-spacing: -0.02em;
+}
+
+.services-hero p {
+  max-width: 760px;
+  color: rgba(248, 250, 252, 0.78);
+  line-height: 1.7;
+}
+
+.services-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.4rem;
+}
+
+.services-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem;
+  padding-top: 2rem;
+  padding-bottom: 3.4rem;
+}
+
+.service-card {
+  padding: 1.35rem;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 260px;
+}
+
+.service-card h2 {
+  font-size: 1.18rem;
+  margin-bottom: 0.45rem;
+}
+
+.service-card p,
+.service-card li {
+  color: rgba(248, 250, 252, 0.76);
+  line-height: 1.6;
+}
+
+.service-card ul {
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.service-link {
+  margin-top: auto;
+  width: fit-content;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.services-conversion {
+  padding-bottom: 3.2rem;
+}
+
+.services-conversion-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, rgba(122, 162, 255, 0.12), rgba(74, 108, 244, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.services-conversion-card h3 {
+  font-size: 1.1rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .services-list {
+    grid-template-columns: 1fr;
+  }
+
+  .services-conversion-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

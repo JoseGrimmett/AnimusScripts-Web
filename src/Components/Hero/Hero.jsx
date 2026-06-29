@@ -1,26 +1,51 @@
 import React from "react";
 import "./Hero.css";
+
 const Hero = () => {
   return (
-    <div className="hero container">
-      <div className="hero-box">
-      <div className="hero-text">
-        <h1 className="hero-text-h1"> Welcome to Animus Scripts </h1>  
-        <h2>Innovative Software Solutions for a Digital Future</h2>
+    <section id="hero" className="hero">
+      <div className="hero-overlay" />
+      <div className="hero-content container">
+        <div className="hero-badge">Practical systems for manufacturing, operations, and finance teams</div>
+        <h1>Reliable internal systems that replace manual reporting, disconnected workflows, and fragile spreadsheets.</h1>
         <p>
-              At Animus Scripts, we specialize in crafting powerful and efficient
-          software solutions tailored to your business needs. With expertise in
-          Databases, IT Applications, and Web Development, we bring your ideas
-          to life through cutting-edge technology and seamless functionality.
-          Whether you're looking to build scalable web applications, optimize
-          your data management, or develop robust IT solutions, our team is
-          committed to delivering high-quality, customized software that drives
-          success.
+          Animus Scripts helps businesses replace disconnected spreadsheets, manual reporting, and fragile processes with reliable data pipelines, trusted dashboards, and operational systems built around how your team actually works.
         </p>
-        {/* <button className="btn">Learn More</button> */}
+        <div className="hero-actions">
+          <a href="#contact" className="btn dark-btn">Start the conversation</a>
+          <a href="#featured-work" className="btn ghost-btn">See our work</a>
+        </div>
+        <div className="hero-trust-bar">
+          <span>Manufacturing, operations, finance teams</span>
+          <span>SQL, Power BI, Python, Microsoft 365</span>
+          <span>Audit trails, data quality, repeatable processes</span>
+        </div>
+        <div className="hero-highlights">
+          <div>
+            <strong>Observable automation</strong>
+            <span>Every system includes logging, error handling, and recovery—not silent failures.</span>
+          </div>
+          <div>
+            <strong>Built for your tools</strong>
+            <span>Integrations with SQL, Power BI, SharePoint, Teams, ERP, and the systems you already use.</span>
+          </div>
+        </div>
+        <div className="hero-stats">
+          <div>
+            <strong>No bloat</strong>
+            <span>Practical systems designed for your specific workflow and data structure.</span>
+          </div>
+          <div>
+            <strong>Central source of truth</strong>
+            <span>Reconciled data, consistent definitions, and verified reporting across the organization.</span>
+          </div>
+          <div>
+            <strong>Long-term partnership</strong>
+            <span>Documentation, knowledge transfer, and ongoing support for a system that scales with the business.</span>
+          </div>
+        </div>
       </div>
-      </div>
-    </div>
+    </section>
   );
 };
 
