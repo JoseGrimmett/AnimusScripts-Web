@@ -39,17 +39,27 @@ export default defineConfig(({ mode }) => {
           }
 
           server.middlewares.use('/api/contact', async (req, res, next) => {
-            if (req.url && req.url !== '/' && req.url !== '') {
-              next()
-              return
-            }
-
             if (req.method === 'POST') {
               req.body = await readRequestBody(req)
             }
 
             const contactHandler = await getContactHandler()
             await contactHandler(req, res)
+          })
+
+          let submissionsHandlerPromise
+
+          const getSubmissionsHandler = async () => {
+            if (!submissionsHandlerPromise) {
+              submissionsHandlerPromise = import('./api/submissions.js').then((module) => module.default ?? module)
+            }
+
+            return submissionsHandlerPromise
+          }
+
+          server.middlewares.use('/api/submissions', async (req, res, next) => {
+            const submissionsHandler = await getSubmissionsHandler()
+            await submissionsHandler(req, res)
           })
         },
       },
