@@ -1,11 +1,8 @@
-import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const require = createRequire(import.meta.url)
-const contactHandler = require('../api/contact.js')
 const currentDir = dirname(fileURLToPath(import.meta.url))
 
 const readRequestBody = (req) =>
@@ -29,7 +26,18 @@ export default defineConfig(({ mode }) => {
       react(),
       {
         name: 'local-contact-api',
+        apply: 'serve',
         configureServer(server) {
+          let contactHandlerPromise
+
+          const getContactHandler = async () => {
+            if (!contactHandlerPromise) {
+              contactHandlerPromise = import('../api/contact.js').then((module) => module.default ?? module)
+            }
+
+            return contactHandlerPromise
+          }
+
           server.middlewares.use('/api/contact', async (req, res, next) => {
             if (req.url && req.url !== '/' && req.url !== '') {
               next()
@@ -40,6 +48,7 @@ export default defineConfig(({ mode }) => {
               req.body = await readRequestBody(req)
             }
 
+            const contactHandler = await getContactHandler()
             await contactHandler(req, res)
           })
         },
