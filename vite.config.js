@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
 
           const getContactHandler = async () => {
             if (!contactHandlerPromise) {
-              contactHandlerPromise = import('../api/contact.js').then((module) => module.default ?? module)
+              contactHandlerPromise = import('./api/contact.js').then((module) => module.default ?? module)
             }
 
             return contactHandlerPromise
