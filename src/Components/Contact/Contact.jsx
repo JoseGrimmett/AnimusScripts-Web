@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Contact.css";
+import { trackCTAClick } from "../../utils/analytics";
 
 const initialState = {
   name: "",
@@ -22,6 +23,9 @@ const Contact = () => {
     event.preventDefault();
     setIsSubmitting(true);
     setStatus({ type: "idle", message: "" });
+
+    // Track form submission
+    trackCTAClick("contact_form_submit", "contact_section");
 
     const endpoint = import.meta.env.VITE_FORMSPREE_ENDPOINT;
 

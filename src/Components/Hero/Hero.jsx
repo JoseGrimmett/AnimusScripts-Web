@@ -1,7 +1,9 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./Hero.css";
+import { trackCTAClick } from "../../utils/analytics";
 
-const Hero = () => {
+const Hero = ({ setPlayState }) => {
   return (
     <section id="hero" className="hero">
       <div className="hero-overlay" />
@@ -12,8 +14,15 @@ const Hero = () => {
           Animus Scripts helps businesses replace disconnected spreadsheets, manual reporting, and fragile processes with reliable data pipelines, trusted dashboards, and operational systems built around how your team actually works.
         </p>
         <div className="hero-actions">
-          <a href="#contact" className="btn dark-btn">Start the conversation</a>
-          <a href="#featured-work" className="btn ghost-btn">See our work</a>
+          <a href="#contact" className="btn dark-btn" onClick={() => trackCTAClick("hero_conversation", "hero")}>Start the conversation</a>
+          <a href="#featured-work" className="btn ghost-btn" onClick={() => trackCTAClick("hero_see_work", "hero")}>See our work</a>
+          <button className="btn demo-btn" onClick={() => {
+            trackCTAClick("hero_demo", "hero");
+            setPlayState(true);
+          }}>
+            <span className="demo-btn-icon">&#9654;</span> Watch the walkthrough
+          </button>
+          <Link to="/pricing" className="btn pricing-link-btn" onClick={() => trackCTAClick("hero_pricing", "hero")}>View pricing</Link>
         </div>
         <div className="hero-trust-bar">
           <span>Manufacturing, operations, finance teams</span>

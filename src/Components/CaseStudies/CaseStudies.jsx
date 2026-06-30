@@ -9,6 +9,12 @@ const caseStudies = [
     summary:
       "A field-first CRM experience that replaced scattered spreadsheets with a focused and reliable workflow hub.",
     outcome: "+38% faster response time",
+    roiMetrics: [
+      { label: "Response Time Improvement", value: "+38%" },
+      { label: "Manual Data Entry Reduction", value: "65%" },
+      { label: "First-Year ROI", value: "245%" },
+      { label: "Annual Savings", value: "$127K" }
+    ],
     link: "/services/mobile-products",
   },
   {
@@ -17,6 +23,12 @@ const caseStudies = [
     summary:
       "An internal operations platform that brought visibility, approvals, and reporting into a single polished system.",
     outcome: "Unified reporting in one place",
+    roiMetrics: [
+      { label: "Reporting Consolidation", value: "3→1 system" },
+      { label: "Approval Cycle Time", value: "-60%" },
+      { label: "Team Hours Saved/Week", value: "18 hrs" },
+      { label: "Annual Hours Saved", value: "900 hrs" }
+    ],
     link: "/services/web-platforms",
   },
   {
@@ -25,6 +37,12 @@ const caseStudies = [
     summary:
       "Connected fragmented processes into a scalable automation layer that reduced repetitive admin work across teams.",
     outcome: "2x weekly team capacity",
+    roiMetrics: [
+      { label: "Capacity Gain", value: "+2x/week" },
+      { label: "Process Automation Rate", value: "85%" },
+      { label: "Payback Period", value: "2.3 months" },
+      { label: "Year 2 ROI", value: "450%" }
+    ],
     link: "/services/it-automation",
   },
 ];
@@ -78,6 +96,18 @@ const CaseStudies = () => {
             </div>
             <h3>{study.title}</h3>
             <p>{study.summary}</p>
+            
+            {study.roiMetrics && (
+              <div className="case-roi-metrics">
+                {study.roiMetrics.map((metric, idx) => (
+                  <div key={idx} className="roi-metric-item">
+                    <span className="roi-metric-label">{metric.label}</span>
+                    <strong className="roi-metric-value">{metric.value}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <Link to={study.link} className="text-link">
               View service →
             </Link>

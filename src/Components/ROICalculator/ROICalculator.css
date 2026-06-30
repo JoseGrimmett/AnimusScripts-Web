@@ -1,0 +1,305 @@
+/* ─── Layout ──────────────────────────────────────────────── */
+.roi-calculator {
+  width: 100%;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, rgba(74, 108, 244, 0.06) 0%, rgba(128, 189, 180, 0.04) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(122, 162, 255, 0.14);
+}
+
+.roi-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.roi-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f5f7fb;
+  margin: 0 0 0.5rem;
+}
+
+.roi-header p {
+  font-size: 0.95rem;
+  color: rgba(245, 247, 251, 0.65);
+  margin: 0;
+}
+
+/* ─── Grid layout ──────────────────────────────────────────── */
+.roi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .roi-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* ─── Inputs Panel ──────────────────────────────────────────── */
+.roi-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: rgba(13, 22, 40, 0.5);
+  border: 1px solid rgba(122, 162, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.roi-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.roi-input-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f5f7fb;
+  margin-bottom: 0.25rem;
+}
+
+.roi-value {
+  font-size: 0.85rem;
+  color: #7aa2ff;
+  font-weight: 700;
+}
+
+.roi-input-group input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #4a6cf4, #80bdb4);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.roi-input-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7aa2ff;
+  cursor: pointer;
+  border: 2px solid #07111f;
+  box-shadow: 0 2px 8px rgba(122, 162, 255, 0.3);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.roi-input-group input[type="range"]::-webkit-slider-thumb:hover {
+  background: #c0d4ff;
+  box-shadow: 0 4px 12px rgba(122, 162, 255, 0.5);
+}
+
+.roi-input-group input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #7aa2ff;
+  cursor: pointer;
+  border: 2px solid #07111f;
+  box-shadow: 0 2px 8px rgba(122, 162, 255, 0.3);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.roi-input-hint {
+  font-size: 0.75rem;
+  color: rgba(245, 247, 251, 0.45);
+  font-style: italic;
+}
+
+/* ─── Results Panel ──────────────────────────────────────────── */
+.roi-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(13, 22, 40, 0.8);
+  border: 1px solid rgba(128, 189, 180, 0.18);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.roi-result-header {
+  background: rgba(74, 108, 244, 0.15);
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #7aa2ff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(122, 162, 255, 0.12);
+}
+
+.roi-result-row {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.2s;
+}
+
+.roi-result-row:last-of-type {
+  border-bottom: none;
+}
+
+.roi-result-row:hover {
+  background: rgba(122, 162, 255, 0.06);
+}
+
+.roi-label {
+  font-size: 0.85rem;
+  color: rgba(245, 247, 251, 0.6);
+  font-weight: 500;
+}
+
+.roi-number {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f5f7fb;
+}
+
+.roi-subtext {
+  font-size: 0.75rem;
+  color: rgba(245, 247, 251, 0.35);
+  font-style: italic;
+}
+
+/* ─── Result Row Variants ──────────────────────────────────── */
+.roi-primary {
+  background: rgba(74, 108, 244, 0.1);
+  border-bottom: 1px solid rgba(122, 162, 255, 0.12);
+}
+
+.roi-primary .roi-number {
+  color: #7aa2ff;
+}
+
+.roi-positive {
+  background: rgba(128, 189, 180, 0.08);
+  border-bottom: 1px solid rgba(128, 189, 180, 0.1);
+}
+
+.roi-positive .roi-number {
+  color: #80bdb4;
+}
+
+.roi-accent {
+  background: rgba(74, 108, 244, 0.06);
+  border-bottom: 1px solid rgba(122, 162, 255, 0.1);
+}
+
+.roi-accent .roi-number {
+  color: #a5b8f8;
+}
+
+.roi-highlight {
+  background: rgba(128, 189, 180, 0.12);
+  border: none;
+}
+
+.roi-highlight .roi-label {
+  color: rgba(245, 247, 251, 0.75);
+}
+
+.roi-highlight .roi-number {
+  color: #80bdb4;
+  font-size: 1.8rem;
+}
+
+.roi-cost {
+  color: rgba(245, 247, 251, 0.7);
+}
+
+.roi-final {
+  background: rgba(13, 22, 40, 0.5);
+}
+
+.roi-divider {
+  height: 1px;
+  background: rgba(122, 162, 255, 0.08);
+}
+
+/* ─── Summary ──────────────────────────────────────────────── */
+.roi-summary {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(74, 108, 244, 0.08), rgba(128, 189, 180, 0.06));
+  border-top: 1px solid rgba(122, 162, 255, 0.1);
+  border-bottom: 1px solid rgba(122, 162, 255, 0.1);
+}
+
+.roi-summary-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roi-summary-label {
+  font-size: 0.8rem;
+  color: rgba(245, 247, 251, 0.55);
+  font-weight: 500;
+}
+
+.roi-summary-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #7aa2ff;
+}
+
+/* ─── CTA ─────────────────────────────────────────────────── */
+.roi-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.5rem;
+  margin: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #4a6cf4 0%, #7aa2ff 100%);
+  border: none;
+  border-radius: 10px;
+  color: #f5f7fb;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.roi-cta:hover {
+  background: linear-gradient(135deg, #5a7dff 0%, #c0d4ff 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(122, 162, 255, 0.3);
+}
+
+/* ─── Footer ───────────────────────────────────────────────── */
+.roi-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(122, 162, 255, 0.12);
+  text-align: center;
+}
+
+.roi-footer-text {
+  font-size: 0.8rem;
+  color: rgba(245, 247, 251, 0.5);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.roi-footer-text strong {
+  color: rgba(245, 247, 251, 0.65);
+}

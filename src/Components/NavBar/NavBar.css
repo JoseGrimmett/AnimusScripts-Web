@@ -101,6 +101,13 @@
   gap: 0.25rem;
   padding: 0.45rem;
   background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.menu-icon:active {
+  transform: scale(0.95);
 }
 
 .menu-icon span {
@@ -108,6 +115,19 @@
   height: 2px;
   background: #fff;
   border-radius: 999px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-icon.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.menu-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-icon.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
 }
 
 @media (max-width: 840px) {
@@ -115,24 +135,69 @@
     padding: 0.8rem 0.95rem;
   }
 
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: -2;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .nav-links {
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
-    width: min(80vw, 240px);
-    padding: 5rem 1.2rem 1.5rem;
+    width: min(80vw, 280px);
+    padding: 5rem 1.5rem 1.5rem;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
-    background: rgba(3, 8, 23, 0.95);
+    align-items: stretch;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, rgba(3, 8, 23, 0.98) 0%, rgba(13, 22, 40, 0.95) 100%);
     backdrop-filter: blur(20px);
-    transition: 0.3s ease;
+    border-left: 1px solid rgba(122, 162, 255, 0.1);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: -1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-links a {
     width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .nav-links a:active {
+    background: rgba(122, 162, 255, 0.15);
+    transform: scale(0.98);
+  }
+
+  .nav-links a:hover {
+    background: rgba(122, 162, 255, 0.15);
+    transform: translateX(4px);
+  }
+
+  .nav-cta {
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 10px 20px rgba(74, 108, 244, 0.25);
   }
 
   .menu-icon {
@@ -140,16 +205,35 @@
   }
 
   .hide-mobile-menu {
-    right: -260px;
+    right: -300px;
   }
 
   .open {
     right: 0;
+  }
+
+  /* Smooth scroll lock on body when menu open */
+  body.menu-open {
+    overflow: hidden;
   }
 }
 
 @media (max-width: 560px) {
   .nav-brand small {
     display: none;
+  }
+
+  .nav-links {
+    width: 100vw !important;
+    right: -100vw !important;
+  }
+
+  .nav-links.open {
+    right: 0 !important;
+  }
+
+  .navbar {
+    width: calc(100% - 1rem);
+    margin: 0.5rem auto;
   }
 }

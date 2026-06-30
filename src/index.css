@@ -144,16 +144,46 @@ button {
   cursor: pointer;
   border: 1px solid transparent;
   font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.2s ease, 
+              background 0.2s ease,
+              color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
 }
 
 .btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active {
   transform: translateY(-1px);
+}
+
+.btn:hover::before,
+.btn:active::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn img {
   width: 20px;
   margin-left: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .btn.dark-btn {
@@ -162,21 +192,81 @@ button {
   box-shadow: 0 12px 25px rgba(89, 168, 255, 0.25);
 }
 
+.btn.dark-btn:hover {
+  box-shadow: 0 20px 40px rgba(89, 168, 255, 0.35);
+}
+
 .btn.ghost-btn {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   border-color: var(--border);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn.ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 20px rgba(122, 162, 255, 0.15);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 @keyframes sectionReveal {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced card interactions */
+.card-raise {
+  transition: transform var(--transition), 
+              border-color var(--transition), 
+              background var(--transition), 
+              box-shadow var(--transition),
+              translate 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, box-shadow;
+}
+
+.card-raise:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 40px rgba(2, 8, 23, 0.3);
+}
+
+.card-raise:active {
+  transform: translateY(-2px);
 }
 
 @media (max-width: 800px) {

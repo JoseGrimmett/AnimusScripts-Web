@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./NavBar.css";
-import { Link } from "react-scroll";
+import { Link as ScrollLink } from "react-scroll";
+import { Link } from "react-router-dom";
 import ASLogo from "../../assets/AnimusSciptsLogo.png";
 
 const NavBar = () => {
@@ -18,10 +19,17 @@ const NavBar = () => {
 
   const toggleMenu = () => {
     setMobileMenu((prev) => !prev);
+    // Prevent body scroll when menu is open
+    if (!mobileMenu) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
   };
 
   const closeMenu = () => {
     setMobileMenu(false);
+    document.body.style.overflow = "unset";
   };
 
   return (
@@ -35,18 +43,23 @@ const NavBar = () => {
       </div>
 
       <ul className={`nav-links ${mobileMenu ? "open" : "hide-mobile-menu"}`}>
-        <li><Link to="hero" smooth={true} offset={-80} duration={500} onClick={closeMenu}>Home</Link></li>
-        <li><Link to="case-studies" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Work</Link></li>
-        <li><Link to="program" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Services</Link></li>
-        <li><Link to="about" smooth={true} offset={-120} duration={500} onClick={closeMenu}>About</Link></li>
-        <li><Link to="contact" smooth={true} offset={-120} duration={500} onClick={closeMenu} className="nav-cta">Book a call</Link></li>
+        <li><ScrollLink to="hero" smooth={true} offset={-80} duration={500} onClick={closeMenu}>Home</ScrollLink></li>
+        <li><ScrollLink to="case-studies" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Work</ScrollLink></li>
+        <li><ScrollLink to="program" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Services</ScrollLink></li>
+        <li><ScrollLink to="about" smooth={true} offset={-120} duration={500} onClick={closeMenu}>About</ScrollLink></li>
+        <li><Link to="/pricing" onClick={closeMenu}>Pricing</Link></li>
+        <li><ScrollLink to="contact" smooth={true} offset={-120} duration={500} onClick={closeMenu} className="nav-cta">Book a call</ScrollLink></li>
       </ul>
 
-      <button className="menu-icon" onClick={toggleMenu} aria-label="Toggle menu">
+      <button className={`menu-icon ${mobileMenu ? "open" : ""}`} onClick={toggleMenu} aria-label="Toggle menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
+
+      {mobileMenu && (
+        <div className="mobile-menu-overlay" onClick={closeMenu} />
+      )}
     </nav>
   );
 };
