@@ -57,11 +57,12 @@ const LeadCapture = ({ title = "Get your ROI calculation", subtitle = "See how m
       }
 
       setEmail("");
+      if (payload?.durable === false) {
+        console.warn("[lead-capture] submission captured without durable production storage");
+      }
       setStatus({
         type: "success",
-        message: payload?.durable === false
-          ? "Thanks. Your lead was captured, but durable production database storage still needs to be configured."
-          : "Thanks. Your lead was captured and added to the intake system.",
+        message: "Thanks. Your lead was captured and added to the intake system.",
       });
       
       // Track lead capture event

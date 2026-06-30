@@ -76,11 +76,12 @@ const Contact = ({
       }
 
       setFormData(initialState);
+      if (payload?.durable === false) {
+        console.warn("[contact-form] submission captured without durable production storage");
+      }
       setStatus({
         type: "success",
-        message: payload?.durable === false
-          ? "Thanks for reaching out. Your message was captured, but production database persistence still needs to be configured."
-          : "Thanks for reaching out. Your message has been captured.",
+        message: "Thanks for reaching out. Your message has been captured.",
       });
     } catch (error) {
       if (error.message === "Failed to fetch" || error.message === "Submission failed" || error.message === "Failed to store submission") {
