@@ -1,3 +1,8 @@
+require('dotenv').config({
+  path: require('node:path').resolve(__dirname, '../.env.local'),
+  override: true,
+})
+
 const { getStorageStatus } = require('./contactStore.cjs')
 
 async function main() {

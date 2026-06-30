@@ -21,6 +21,22 @@ function shouldUseSsl(url) {
   return Boolean(url) && !/localhost|127\.0\.0\.1/i.test(url) && process.env.PGSSLMODE !== 'disable'
 }
 
+function getConfiguredPostgresUrl() {
+  const url = POSTGRES_URL.trim()
+
+  if (!url) {
+    return ''
+  }
+
+  if (/^postgres(?:ql)?:\/\/user:password@host(?::\d+)?\/animusscripts/i.test(url)) {
+    throw new Error(
+      'CONTACT_DATABASE_URL is still set to the placeholder example value. Add your real Neon connection string in Vercel.',
+    )
+  }
+
+  return url
+}
+
 function normalizeSubmission(payload, requestId) {
   return {
     requestId,
@@ -38,16 +54,18 @@ function normalizeSubmission(payload, requestId) {
 }
 
 function shouldUsePostgres() {
-  return Boolean(POSTGRES_URL)
+  return Boolean(getConfiguredPostgresUrl())
 }
 
 async function ensurePostgres() {
+  const connectionString = getConfiguredPostgresUrl()
+
   if (!postgresPool) {
     postgresPool = new Pool({
-      connectionString: POSTGRES_URL,
+      connectionString,
       max: 3,
       idleTimeoutMillis: 10000,
-      ssl: shouldUseSsl(POSTGRES_URL) ? { rejectUnauthorized: false } : false,
+      ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false,
     })
   }
 
