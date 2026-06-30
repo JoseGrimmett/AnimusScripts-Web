@@ -304,7 +304,7 @@ const PricingPage = () => {
               <Link to="/contact" className="btn dark-btn">
                 Schedule a discovery call
               </Link>
-              <a href="mailto:hello@animusscripts.com" className="btn ghost-btn">
+              <a href="mailto:info@animusscripts.com" className="btn ghost-btn">
                 Or email us directly
               </a>
             </div>

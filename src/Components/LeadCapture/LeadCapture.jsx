@@ -19,7 +19,7 @@ const LeadCapture = ({ title = "Get your ROI calculation", subtitle = "See how m
       const body = encodeURIComponent(
         `Email: ${email}\nContext: ${context}`
       );
-      window.location.href = `mailto:hello@animusscripts.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
       setStatus({
         type: "success",
         message: "Your email app is opening.",

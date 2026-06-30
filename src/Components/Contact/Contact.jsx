@@ -40,7 +40,7 @@ const Contact = ({
       const body = encodeURIComponent(
         `Name: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\n\nProcess to improve:\n${formData.processNeedsImprovement}\n\nCurrent tools:\n${formData.currentTools}\n\nTimeline: ${formData.timeline || "Not specified"}`
       );
-      window.location.href = `mailto:hello@animusscripts.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
       setStatus({
         type: "success",
         message: "Your email app is opening with your brief ready to send.",
@@ -116,7 +116,7 @@ const Contact = ({
             <span>We deliver and document the solution so your team owns it going forward.</span>
           </div>
         </div>
-        <span>hello@animusscripts.com</span>
+        <span>info@animusscripts.com</span>
         <span className="contact-note">Response times are typically within 1–2 business days.</span>
       </div>
 
