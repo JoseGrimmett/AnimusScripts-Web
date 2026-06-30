@@ -2,7 +2,19 @@
 
 Operational software consultancy website built with React and Vite.
 
-## Local development
+## Current State
+
+The site is positioned as an operational software, automation, and business intelligence consultancy. It includes:
+
+- a redesigned marketing homepage
+- service and detail pages for workflow automation, BI, internal apps, integrations, and Microsoft 365 systems
+- a contact flow that posts to a first-party API
+- a database-backed submissions store
+- an internal submissions page at `/submissions`
+
+The app lives in the nested `AnimusScripts-Web/` folder, while the workspace root also contains deployment and API files used by Vercel.
+
+## Local Development
 
 Run from the workspace root:
 
@@ -18,7 +30,22 @@ npm run build
 npm --prefix AnimusScripts-Web run verify:db
 ```
 
-## Contact intake architecture
+## Routing
+
+Main routes currently include:
+
+- `/`
+- `/services`
+- `/services/:slug`
+- `/what-we-build`
+- `/about`
+- `/contact`
+- `/pricing`
+- `/submissions`
+
+The Vite dev server includes local middleware for `/api/contact` and `/api/submissions` so the browser matches the production flow during development.
+
+## Contact Intake Architecture
 
 The website uses a first-party intake API at `api/contact.js`.
 
@@ -34,7 +61,20 @@ Storage behavior:
 - no Postgres URL configured: uses local SQLite
 - Vercel without Postgres: falls back to temporary SQLite in `/tmp`, which is not durable
 
-## Neon setup
+The storage layer lives in `server/contactStore.cjs` and handles table creation, Postgres/SQLite selection, storage status, and recent-submission lookups.
+
+## Submissions Admin
+
+The internal submissions page at `/submissions` calls `/api/submissions` and shows recent records from the database.
+
+Access control is optional but recommended:
+
+- set `ADMIN_SUBMISSIONS_KEY` in `.env.local` and in Vercel
+- unlock the page with that key before viewing or exporting records
+
+If the key is not configured, the submissions endpoint is open.
+
+## Neon Setup
 
 Neon is the recommended production database for this project.
 
@@ -87,9 +127,9 @@ Expected result:
 
 Redeploy after setting the environment variables in Vercel.
 
-The `contact_submissions` table is created automatically on first use.
+The root-level `vercel.json` provides SPA rewrites so direct routes like `/submissions` resolve correctly in production.
 
-## Submission schema
+## Submission Schema
 
 The intake system stores:
 

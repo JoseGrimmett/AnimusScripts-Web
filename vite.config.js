@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
             return contactHandlerPromise
           }
 
-          server.middlewares.use('/api/contact', async (req, res, next) => {
+          server.middlewares.use('/api/contact', async (req, res) => {
             if (req.method === 'POST') {
               req.body = await readRequestBody(req)
             }
@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
             return submissionsHandlerPromise
           }
 
-          server.middlewares.use('/api/submissions', async (req, res, next) => {
+          server.middlewares.use('/api/submissions', async (req, res) => {
             const submissionsHandler = await getSubmissionsHandler()
             await submissionsHandler(req, res)
           })
