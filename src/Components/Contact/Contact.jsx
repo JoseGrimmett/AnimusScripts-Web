@@ -4,12 +4,18 @@ import { trackCTAClick } from "../../utils/analytics";
 
 const initialState = {
   name: "",
+  company: "",
   email: "",
-  projectType: "Data & Reporting",
-  message: "",
+  processNeedsImprovement: "",
+  currentTools: "",
+  timeline: "",
 };
 
-const Contact = () => {
+const Contact = ({
+  sectionId = "contact",
+  title = "Have a process held together by spreadsheets, emails, or manual work?",
+  subtitle = "Let's map the workflow and build a system that saves time, improves visibility, and scales with your business.",
+}) => {
   const [formData, setFormData] = useState(initialState);
   const [status, setStatus] = useState({ type: "idle", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +38,7 @@ const Contact = () => {
     if (!endpoint) {
       const subject = encodeURIComponent(`Project inquiry from ${formData.name || "website"}`);
       const body = encodeURIComponent(
-        `Name: ${formData.name}\nEmail: ${formData.email}\nProject focus: ${formData.projectType}\n\n${formData.message}`
+        `Name: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\n\nProcess to improve:\n${formData.processNeedsImprovement}\n\nCurrent tools:\n${formData.currentTools}\n\nTimeline: ${formData.timeline || "Not specified"}`
       );
       window.location.href = `mailto:hello@animusscripts.com?subject=${subject}&body=${body}`;
       setStatus({
@@ -52,9 +58,11 @@ const Contact = () => {
         },
         body: JSON.stringify({
           name: formData.name,
+          company: formData.company,
           email: formData.email,
-          projectType: formData.projectType,
-          message: formData.message,
+          processNeedsImprovement: formData.processNeedsImprovement,
+          currentTools: formData.currentTools,
+          timeline: formData.timeline,
           source: "animusscripts-site",
         }),
       });
@@ -79,21 +87,19 @@ const Contact = () => {
   };
 
   return (
-    <section className="contact" id="contact">
+    <section className="contact" id={sectionId}>
       <div className="contact-col">
-        <div className="brand-pill">Let's build it</div>
-        <h3>Reliable systems that replace manual work and spreadsheet chaos.</h3>
-        <p>
-          If you're managing reporting bottlenecks, fragile workflows, disconnected data, or repetitive manual processes—let's talk about a practical system that scales with your team.
-        </p>
+        <div className="brand-pill">Start a conversation</div>
+        <h3>{title}</h3>
+        <p>{subtitle}</p>
         <div className="contact-highlights">
           <div>
             <strong>What to expect</strong>
-            <span>A conversation about your current pain points, systems, and timeline for improvement.</span>
+            <span>A practical discussion about bottlenecks, systems, and how work should flow.</span>
           </div>
           <div>
             <strong>Best fit</strong>
-            <span>Manufacturing, operations, finance teams with SQL, Power BI, or Microsoft 365 environments.</span>
+            <span>Operations, manufacturing, finance, and IT teams managing critical internal workflows.</span>
           </div>
         </div>
         <div className="contact-steps">
@@ -121,26 +127,54 @@ const Contact = () => {
             <input name="name" value={formData.name} onChange={handleChange} type="text" placeholder="Your name" required />
           </label>
           <label>
+            Company
+            <input
+              name="company"
+              value={formData.company}
+              onChange={handleChange}
+              type="text"
+              placeholder="Company name"
+              required
+            />
+          </label>
+          <label>
             Email
             <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="you@example.com" required />
           </label>
           <label>
-            Project focus
-            <select name="projectType" value={formData.projectType} onChange={handleChange}>
-              <option value="Data & Reporting">Data & Reporting</option>
-              <option value="Workflow Automation">Workflow Automation</option>
-              <option value="Data Integration & ETL">Data Integration & ETL</option>
-              <option value="Microsoft 365 Solutions">Microsoft 365 Solutions</option>
-              <option value="Internal Application">Internal Application</option>
-              <option value="Access & Directory">Access & Directory</option>
-            </select>
+            What process needs improvement?
+            <textarea
+              name="processNeedsImprovement"
+              value={formData.processNeedsImprovement}
+              onChange={handleChange}
+              rows="3"
+              placeholder="Describe the workflow, bottleneck, or manual process that needs to improve."
+              required
+            ></textarea>
           </label>
           <label>
-            Project brief
-            <textarea name="message" value={formData.message} onChange={handleChange} rows="5" placeholder="Tell me about the challenge, timeline, and goals." required></textarea>
+            Current tools or systems involved
+            <textarea
+              name="currentTools"
+              value={formData.currentTools}
+              onChange={handleChange}
+              rows="3"
+              placeholder="For example: Excel, SharePoint, SQL Server, Power BI, ERP, Teams, Jotform."
+              required
+            ></textarea>
+          </label>
+          <label>
+            Optional project timeline
+            <input
+              name="timeline"
+              value={formData.timeline}
+              onChange={handleChange}
+              type="text"
+              placeholder="For example: this quarter, next 60 days, exploratory"
+            />
           </label>
           <button type="submit" className="btn dark-btn" disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Start the conversation"}
+            {isSubmitting ? "Sending..." : "Start a Conversation"}
           </button>
           {status.message ? (
             <p className={`contact-status ${status.type}`}>{status.message}</p>

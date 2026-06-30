@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./NavBar.css";
-import { Link as ScrollLink } from "react-scroll";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import ASLogo from "../../assets/AnimusSciptsLogo.png";
 
 const NavBar = () => {
@@ -17,41 +16,66 @@ const NavBar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = mobileMenu ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenu]);
+
   const toggleMenu = () => {
     setMobileMenu((prev) => !prev);
-    // Prevent body scroll when menu is open
-    if (!mobileMenu) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
   };
 
   const closeMenu = () => {
     setMobileMenu(false);
-    document.body.style.overflow = "unset";
   };
+
+  const navClassName = ({ isActive }) => (isActive ? "nav-active" : "");
 
   return (
     <nav className={`navbar ${sticky ? "dark-nav" : ""}`}>
-      <div className="nav-brand">
+      <Link to="/" className="nav-brand" onClick={closeMenu}>
         <img src={ASLogo} alt="Animus Scripts logo" className="logo" />
         <div>
           <span>Animus Scripts</span>
-          <small>Software engineering studio</small>
+          <small>Operational software consultancy</small>
         </div>
-      </div>
+      </Link>
 
       <ul className={`nav-links ${mobileMenu ? "open" : "hide-mobile-menu"}`}>
-        <li><ScrollLink to="hero" smooth={true} offset={-80} duration={500} onClick={closeMenu}>Home</ScrollLink></li>
-        <li><ScrollLink to="case-studies" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Work</ScrollLink></li>
-        <li><ScrollLink to="program" smooth={true} offset={-120} duration={500} onClick={closeMenu}>Services</ScrollLink></li>
-        <li><ScrollLink to="about" smooth={true} offset={-120} duration={500} onClick={closeMenu}>About</ScrollLink></li>
-        <li><Link to="/pricing" onClick={closeMenu}>Pricing</Link></li>
-        <li><ScrollLink to="contact" smooth={true} offset={-120} duration={500} onClick={closeMenu} className="nav-cta">Book a call</ScrollLink></li>
+        <li>
+          <NavLink to="/" onClick={closeMenu} className={navClassName} end>
+            Home
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/services" onClick={closeMenu} className={navClassName}>
+            Services
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/what-we-build" onClick={closeMenu} className={navClassName}>
+            What We Build
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/about" onClick={closeMenu} className={navClassName}>
+            About
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/contact" onClick={closeMenu} className="nav-cta">
+            Contact
+          </NavLink>
+        </li>
       </ul>
 
-      <button className={`menu-icon ${mobileMenu ? "open" : ""}`} onClick={toggleMenu} aria-label="Toggle menu">
+      <button
+        className={`menu-icon ${mobileMenu ? "open" : ""}`}
+        onClick={toggleMenu}
+        aria-label="Toggle menu"
+      >
         <span></span>
         <span></span>
         <span></span>

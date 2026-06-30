@@ -62,7 +62,7 @@ export const trackROICalculation = (inputs, results) => {
 };
 
 // Track lead capture
-export const trackLeadCapture = (context, email) => {
+export const trackLeadCapture = (context) => {
   trackEvent("lead_capture", {
     context: context,
     email_captured: true,

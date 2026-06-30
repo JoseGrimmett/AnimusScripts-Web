@@ -185,9 +185,9 @@ const PricingPage = () => {
                   ))}
                 </div>
 
-                <a href="#contact" className={`btn ${tier.isPrimary ? "dark-btn" : "ghost-btn"}`}>
+                <Link to="/contact" className={`btn ${tier.isPrimary ? "dark-btn" : "ghost-btn"}`}>
                   {tier.cta}
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -301,9 +301,9 @@ const PricingPage = () => {
             <h2>Ready to talk about your specific needs?</h2>
             <p>We'll customize a proposal based on your timeline, team size, and budget.</p>
             <div className="pricing-cta-actions">
-              <a href="#contact" className="btn dark-btn">
+              <Link to="/contact" className="btn dark-btn">
                 Schedule a discovery call
-              </a>
+              </Link>
               <a href="mailto:hello@animusscripts.com" className="btn ghost-btn">
                 Or email us directly
               </a>
