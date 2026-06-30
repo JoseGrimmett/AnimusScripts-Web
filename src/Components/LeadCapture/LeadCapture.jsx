@@ -2,55 +2,66 @@ import React, { useState } from "react";
 import "./LeadCapture.css";
 import { trackLeadCapture } from "../../utils/analytics";
 
+const buildLeadMailto = (email, context) => {
+  const subject = encodeURIComponent("Lead capture from Animus Scripts");
+  const body = encodeURIComponent(`Email: ${email}\nContext: ${context}`);
+
+  return `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
+};
+
 const LeadCapture = ({ title = "Get your ROI calculation", subtitle = "See how much you could save", context = "homepage" }) => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState({ type: "idle", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isValidationError = (message) => message === "Email is required";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
     setStatus({ type: "idle", message: "" });
 
-    const endpoint = import.meta.env.VITE_FORMSPREE_ENDPOINT;
-
-    if (!endpoint) {
-      const subject = encodeURIComponent("Lead capture from Animus Scripts");
-      const body = encodeURIComponent(
-        `Email: ${email}\nContext: ${context}`
-      );
-      window.location.href = `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
+    const fallBackToEmail = () => {
+      window.location.href = buildLeadMailto(email, context);
       setStatus({
         type: "success",
-        message: "Your email app is opening.",
+        message: "The intake service is unavailable right now. Your email app is opening.",
       });
-      setEmail("");
-      setIsSubmitting(false);
-      return;
-    }
+    };
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          kind: "lead",
           email: email,
-          source: `lead-capture-${context}`,
-          timestamp: new Date().toISOString(),
+          context,
         }),
       });
 
+      const payload = await response.json().catch(() => null);
+
       if (!response.ok) {
-        throw new Error("Submission failed");
+        const message = payload?.error || "Submission failed";
+
+        if (response.status === 400 && isValidationError(message)) {
+          throw new Error(message);
+        }
+
+        fallBackToEmail();
+        return;
       }
 
       setEmail("");
       setStatus({
         type: "success",
-        message: "Thanks! Check your email for your ROI calculation.",
+        message: payload?.durable === false
+          ? "Thanks. Your lead was captured, but durable production database storage still needs to be configured."
+          : "Thanks. Your lead was captured and added to the intake system.",
       });
       
       // Track lead capture event
@@ -58,11 +69,15 @@ const LeadCapture = ({ title = "Get your ROI calculation", subtitle = "See how m
       
       // Reset success message after 4 seconds
       setTimeout(() => setStatus({ type: "idle", message: "" }), 4000);
-    } catch {
-      setStatus({
-        type: "error",
-        message: "Something went wrong. Please try again.",
-      });
+    } catch (error) {
+      if (!isValidationError(error.message) || error.message === "Failed to store submission") {
+        fallBackToEmail();
+      } else {
+        setStatus({
+          type: "error",
+          message: error.message || "Something went wrong. Please try again.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

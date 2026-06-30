@@ -11,6 +11,15 @@ const initialState = {
   timeline: "",
 };
 
+const buildContactMailto = (formData) => {
+  const subject = encodeURIComponent(`Project inquiry from ${formData.name || "website"}`);
+  const body = encodeURIComponent(
+    `Name: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\n\nProcess to improve:\n${formData.processNeedsImprovement}\n\nCurrent tools:\n${formData.currentTools}\n\nTimeline: ${formData.timeline || "Not specified"}`,
+  );
+
+  return `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
+};
+
 const Contact = ({
   sectionId = "contact",
   title = "Have a process held together by spreadsheets, emails, or manual work?",
@@ -25,38 +34,31 @@ const Contact = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const fallBackToEmail = () => {
+    window.location.href = buildContactMailto(formData);
+    setStatus({
+      type: "success",
+      message: "The intake service is unavailable right now. Your email app is opening instead.",
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus({ type: "idle", message: "" });
+    setStatus({ type: "idle", message: "Sending..." });
 
     // Track form submission
     trackCTAClick("contact_form_submit", "contact_section");
 
-    const endpoint = import.meta.env.VITE_FORMSPREE_ENDPOINT;
-
-    if (!endpoint) {
-      const subject = encodeURIComponent(`Project inquiry from ${formData.name || "website"}`);
-      const body = encodeURIComponent(
-        `Name: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\n\nProcess to improve:\n${formData.processNeedsImprovement}\n\nCurrent tools:\n${formData.currentTools}\n\nTimeline: ${formData.timeline || "Not specified"}`
-      );
-      window.location.href = `mailto:info@animusscripts.com?subject=${subject}&body=${body}`;
-      setStatus({
-        type: "success",
-        message: "Your email app is opening with your brief ready to send.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          kind: "contact",
           name: formData.name,
           company: formData.company,
           email: formData.email,
@@ -67,20 +69,28 @@ const Contact = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Submission failed");
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Submission failed");
       }
 
       setFormData(initialState);
       setStatus({
         type: "success",
-        message: "Thanks for reaching out. Your message has been sent.",
+        message: payload?.durable === false
+          ? "Thanks for reaching out. Your message was captured, but production database persistence still needs to be configured."
+          : "Thanks for reaching out. Your message has been captured.",
       });
-    } catch {
-      setStatus({
-        type: "error",
-        message: "Something went wrong on submit. Please try again in a moment.",
-      });
+    } catch (error) {
+      if (error.message === "Failed to fetch" || error.message === "Submission failed" || error.message === "Failed to store submission") {
+        fallBackToEmail();
+      } else {
+        setStatus({
+          type: "error",
+          message: error.message || "Something went wrong on submit. Please try again in a moment.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

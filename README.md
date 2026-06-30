@@ -1,13 +1,108 @@
-www.animusscripts.com
-# React + Vite
+# Animus Scripts Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Operational software consultancy website built with React and Vite.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Run from the workspace root:
 
-## Expanding the ESLint configuration
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Other useful commands:
+
+```bash
+npm run lint
+npm run build
+npm --prefix AnimusScripts-Web run verify:db
+```
+
+## Contact intake architecture
+
+The website uses a first-party intake API at `api/contact.js`.
+
+Submission flow:
+
+1. Contact and lead forms post to `/api/contact`
+2. The API stores submissions in `contact_submissions`
+3. Email notification is optional and uses Resend when configured
+
+Storage behavior:
+
+- `CONTACT_DATABASE_URL`, `POSTGRES_URL`, or `DATABASE_URL` configured: uses Postgres
+- no Postgres URL configured: uses local SQLite
+- Vercel without Postgres: falls back to temporary SQLite in `/tmp`, which is not durable
+
+## Neon setup
+
+Neon is the recommended production database for this project.
+
+### 1. Create a Neon project
+
+Create a Postgres database in Neon and copy the connection string.
+
+### 2. Add environment variables
+
+In Vercel project settings, add:
+
+- `CONTACT_DATABASE_URL` = your Neon connection string
+
+Optional notification settings:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `CONTACT_TO_EMAIL=info@animusscripts.com`
+
+You can also use `DATABASE_URL` instead of `CONTACT_DATABASE_URL`, but keeping the app-specific variable is clearer.
+
+### 3. Verify locally
+
+Create `AnimusScripts-Web/.env.local` with your Neon connection string:
+
+```env
+CONTACT_DATABASE_URL=postgres://...
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=Animus Scripts <onboarding@resend.dev>
+CONTACT_TO_EMAIL=info@animusscripts.com
+```
+
+Then run:
+
+```bash
+npm --prefix AnimusScripts-Web run verify:db
+```
+
+Expected result:
+
+- `backend: "postgres"`
+- `durable: true`
+
+### 4. Deploy
+
+Redeploy after setting the environment variables in Vercel.
+
+The `contact_submissions` table is created automatically on first use.
+
+## Submission schema
+
+The intake system stores:
+
+- `request_id`
+- `kind`
+- `source`
+- `name`
+- `company`
+- `email`
+- `process_needs_improvement`
+- `current_tools`
+- `timeline`
+- `context`
+- `raw_payload`
+- `created_at`
+
+## Notes
+
+- SQLite is fine for local development.
+- Do not rely on SQLite for production on Vercel.
+- Email notifications are not required for successful capture.
