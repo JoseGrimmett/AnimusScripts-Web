@@ -54,6 +54,10 @@ Optional notification settings:
 - `RESEND_FROM_EMAIL`
 - `CONTACT_TO_EMAIL=info@animusscripts.com`
 
+Optional internal access control for the submissions page:
+
+- `ADMIN_SUBMISSIONS_KEY`
+
 You can also use `DATABASE_URL` instead of `CONTACT_DATABASE_URL`, but keeping the app-specific variable is clearer.
 
 ### 3. Verify locally
@@ -65,6 +69,7 @@ CONTACT_DATABASE_URL=postgres://...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=Animus Scripts <onboarding@resend.dev>
 CONTACT_TO_EMAIL=info@animusscripts.com
+ADMIN_SUBMISSIONS_KEY=choose-a-long-random-internal-key
 ```
 
 Then run:
@@ -106,3 +111,4 @@ The intake system stores:
 - SQLite is fine for local development.
 - Do not rely on SQLite for production on Vercel.
 - Email notifications are not required for successful capture.
+- The `/submissions` route and `/api/submissions` endpoint are protected by `ADMIN_SUBMISSIONS_KEY` when it is configured.

@@ -9,6 +9,7 @@ import PricingPage from './Pages/PricingPage.jsx';
 import WhatWeBuildPage from './Pages/WhatWeBuildPage.jsx';
 import AboutPage from './Pages/AboutPage.jsx';
 import ContactPage from './Pages/ContactPage.jsx';
+import SubmissionsPage from './Pages/SubmissionsPage.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/what-we-build" element={<WhatWeBuildPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/submissions" element={<SubmissionsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
       </Routes>
     </BrowserRouter>

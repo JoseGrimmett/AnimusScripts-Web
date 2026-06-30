@@ -250,7 +250,81 @@ async function getStorageStatus() {
   }
 }
 
+function mapRow(row) {
+  return {
+    id: row.id,
+    requestId: row.request_id,
+    kind: row.kind,
+    source: row.source,
+    name: row.name,
+    company: row.company,
+    email: row.email,
+    processNeedsImprovement: row.process_needs_improvement,
+    currentTools: row.current_tools,
+    timeline: row.timeline,
+    context: row.context,
+    rawPayload: row.raw_payload,
+    createdAt: row.created_at,
+  }
+}
+
+async function getRecentSubmissions(limit = 25) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          request_id,
+          kind,
+          source,
+          name,
+          company,
+          email,
+          process_needs_improvement,
+          current_tools,
+          timeline,
+          context,
+          raw_payload,
+          created_at
+        FROM contact_submissions
+        ORDER BY created_at DESC
+        LIMIT $1
+      `,
+      [safeLimit],
+    )
+
+    return result.rows.map(mapRow)
+  }
+
+  const db = ensureSqlite()
+  const stmt = db.prepare(`
+    SELECT
+      id,
+      request_id,
+      kind,
+      source,
+      name,
+      company,
+      email,
+      process_needs_improvement,
+      current_tools,
+      timeline,
+      context,
+      raw_payload,
+      created_at
+    FROM contact_submissions
+    ORDER BY created_at DESC
+    LIMIT ?
+  `)
+
+  return stmt.all(safeLimit).map(mapRow)
+}
+
 module.exports = {
   getStorageStatus,
+  getRecentSubmissions,
   storeSubmission,
 }
