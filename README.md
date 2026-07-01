@@ -10,7 +10,8 @@ The site is positioned as an operational software, automation, and business inte
 - service and detail pages for workflow automation, BI, internal apps, integrations, and Microsoft 365 systems
 - a contact flow that posts to a first-party API
 - a database-backed submissions store
-- an internal submissions page at `/submissions`
+- an authenticated admin page at `/admin` (also available at `/submissions`)
+- optional Microsoft 365 (Office) admin sign-in
 
 The app lives in the nested `AnimusScripts-Web/` folder, while the workspace root also contains deployment and API files used by Vercel.
 
@@ -28,6 +29,7 @@ Other useful commands:
 npm run lint
 npm run build
 npm --prefix AnimusScripts-Web run verify:db
+npm --prefix AnimusScripts-Web run admin:create -- --username admin --password "StrongPassword123!"
 ```
 
 ## Routing
@@ -41,9 +43,10 @@ Main routes currently include:
 - `/about`
 - `/contact`
 - `/pricing`
+- `/admin`
 - `/submissions`
 
-The Vite dev server includes local middleware for `/api/contact` and `/api/submissions` so the browser matches the production flow during development.
+The Vite dev server includes local middleware for `/api/contact` and all `/api/admin/*` auth routes so the browser matches the production flow during development.
 
 ## Contact Intake Architecture
 
@@ -61,18 +64,40 @@ Storage behavior:
 - no Postgres URL configured: uses local SQLite
 - Vercel without Postgres: falls back to temporary SQLite in `/tmp`, which is not durable
 
-The storage layer lives in `server/contactStore.cjs` and handles table creation, Postgres/SQLite selection, storage status, and recent-submission lookups.
+The storage layer lives in `server/contactStore.cjs` and handles table creation, Postgres/SQLite selection, storage status, recent-submission lookups, and admin user credential verification.
 
 ## Submissions Admin
 
-The internal submissions page at `/submissions` calls `/api/submissions` and shows recent records from the database.
+The admin page at `/admin` calls:
 
-Access control is optional but recommended:
+- `POST /api/admin/login` for username/password authentication
+- `GET /api/admin/submissions` for authenticated submission access
+- `GET /api/admin/microsoft/start` to begin Office sign-in
+- `GET /api/admin/microsoft/callback` for OAuth return handling
 
-- set `ADMIN_SUBMISSIONS_KEY` in `.env.local` and in Vercel
-- unlock the page with that key before viewing or exporting records
+Admin credentials are stored in the `admin_users` table with salted + hashed passwords.
 
-If the key is not configured, the submissions endpoint is open.
+Create or update an admin account with:
+
+```bash
+npm --prefix AnimusScripts-Web run admin:create -- --username admin --password "StrongPassword123!"
+```
+
+Session tokens are signed with `ADMIN_AUTH_SECRET` (falls back to `ADMIN_SUBMISSIONS_KEY` if needed).
+
+### Office (Microsoft 365) sign-in
+
+You can log in through Microsoft by clicking "Continue with Microsoft 365" on the admin page.
+
+Requirements:
+
+- create a Microsoft Entra app registration
+- configure redirect URI to `/api/admin/microsoft/callback`
+- set `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, and `MICROSOFT_TENANT_ID`
+- set at least one allow rule: `ADMIN_ALLOWED_DOMAIN` or `ADMIN_ALLOWED_EMAILS`
+- ensure the Microsoft account email exists as an admin username in `admin_users`
+
+The Office login does not bypass your database authorization. It maps Microsoft identity to an existing admin account.
 
 ## Neon Setup
 
@@ -96,7 +121,17 @@ Optional notification settings:
 
 Optional internal access control for the submissions page:
 
+- `ADMIN_AUTH_SECRET`
 - `ADMIN_SUBMISSIONS_KEY`
+
+Optional Office login settings:
+
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `MICROSOFT_REDIRECT_URI`
+- `ADMIN_ALLOWED_DOMAIN`
+- `ADMIN_ALLOWED_EMAILS`
 
 You can also use `DATABASE_URL` instead of `CONTACT_DATABASE_URL`, but keeping the app-specific variable is clearer.
 
@@ -109,7 +144,14 @@ CONTACT_DATABASE_URL=postgres://...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=Animus Scripts <onboarding@resend.dev>
 CONTACT_TO_EMAIL=info@animusscripts.com
+ADMIN_AUTH_SECRET=choose-a-long-random-session-secret
 ADMIN_SUBMISSIONS_KEY=choose-a-long-random-internal-key
+MICROSOFT_TENANT_ID=common
+MICROSOFT_CLIENT_ID=your-entra-app-client-id
+MICROSOFT_CLIENT_SECRET=your-entra-app-client-secret
+MICROSOFT_REDIRECT_URI=https://www.animusscripts.com/api/admin/microsoft/callback
+ADMIN_ALLOWED_DOMAIN=animusscripts.com
+ADMIN_ALLOWED_EMAILS=admin@animusscripts.com
 ```
 
 Then run:
@@ -146,9 +188,15 @@ The intake system stores:
 - `raw_payload`
 - `created_at`
 
+The admin credential table stores:
+
+- `username`
+- `password_hash`
+- `created_at`
+
 ## Notes
 
 - SQLite is fine for local development.
 - Do not rely on SQLite for production on Vercel.
 - Email notifications are not required for successful capture.
-- The `/submissions` route and `/api/submissions` endpoint are protected by `ADMIN_SUBMISSIONS_KEY` when it is configured.
+- Admin submissions access is protected by login and signed session tokens.

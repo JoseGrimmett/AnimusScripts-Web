@@ -6,8 +6,8 @@ require('dotenv').config({
   override: true,
 })
 
-const { handleAdminSubmissions } = require('../server/adminApi.cjs')
+const { handleMicrosoftCallback } = require('../../../server/adminApi.cjs')
 
 export default async function handler(req, res) {
-  return handleAdminSubmissions(req, res)
+  return handleMicrosoftCallback(req, res)
 }

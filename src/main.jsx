@@ -20,6 +20,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/services/:slug" element={<ServiceDetailPage />} />
         <Route path="/what-we-build" element={<WhatWeBuildPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/admin" element={<SubmissionsPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/submissions" element={<SubmissionsPage />} />
         <Route path="/pricing" element={<PricingPage />} />

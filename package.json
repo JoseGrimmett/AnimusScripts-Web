@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "verify:db": "node ./server/verifyContactStore.cjs"
+    "verify:db": "node ./server/verifyContactStore.cjs",
+    "admin:create": "node ./server/createAdminUser.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",

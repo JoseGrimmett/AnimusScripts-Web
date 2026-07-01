@@ -1,5 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const Database = require('better-sqlite3')
 const { Pool } = require('pg')
 
@@ -57,6 +58,32 @@ function shouldUsePostgres() {
   return Boolean(getConfiguredPostgresUrl())
 }
 
+function buildPasswordHash(password) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex')
+  return `${salt}:${hash}`
+}
+
+function verifyPassword(password, storedHash) {
+  if (!storedHash || typeof storedHash !== 'string' || !storedHash.includes(':')) {
+    return false
+  }
+
+  const [salt, originalHash] = storedHash.split(':')
+
+  if (!salt || !originalHash) {
+    return false
+  }
+
+  const computedHash = crypto.scryptSync(password, salt, 64).toString('hex')
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(originalHash, 'hex'), Buffer.from(computedHash, 'hex'))
+  } catch {
+    return false
+  }
+}
+
 async function ensurePostgres() {
   const connectionString = getConfiguredPostgresUrl()
 
@@ -91,6 +118,15 @@ async function ensurePostgres() {
     )
   `)
 
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id BIGSERIAL PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
   postgresReady = true
   return postgresPool
 }
@@ -119,6 +155,15 @@ function ensureSqlite() {
       timeline TEXT,
       context TEXT,
       raw_payload TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
@@ -323,8 +368,145 @@ async function getRecentSubmissions(limit = 25) {
   return stmt.all(safeLimit).map(mapRow)
 }
 
+async function createOrUpdateAdminUser(username, password) {
+  const normalizedUsername = String(username || '').trim().toLowerCase()
+
+  if (!normalizedUsername || !password) {
+    throw new Error('Username and password are required')
+  }
+
+  if (normalizedUsername.length < 3) {
+    throw new Error('Username must be at least 3 characters long')
+  }
+
+  if (String(password).length < 8) {
+    throw new Error('Password must be at least 8 characters long')
+  }
+
+  const passwordHash = buildPasswordHash(String(password))
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `
+        INSERT INTO admin_users (username, password_hash)
+        VALUES ($1, $2)
+        ON CONFLICT (username)
+        DO UPDATE SET password_hash = EXCLUDED.password_hash
+        RETURNING id, username, created_at
+      `,
+      [normalizedUsername, passwordHash],
+    )
+
+    return {
+      id: result.rows[0].id,
+      username: result.rows[0].username,
+      createdAt: result.rows[0].created_at,
+    }
+  }
+
+  const db = ensureSqlite()
+  db.prepare(
+    `
+      INSERT INTO admin_users (username, password_hash)
+      VALUES (?, ?)
+      ON CONFLICT(username)
+      DO UPDATE SET password_hash = excluded.password_hash
+    `,
+  ).run(normalizedUsername, passwordHash)
+
+  const user = db
+    .prepare('SELECT id, username, created_at FROM admin_users WHERE username = ?')
+    .get(normalizedUsername)
+
+  return {
+    id: user.id,
+    username: user.username,
+    createdAt: user.created_at,
+  }
+}
+
+async function verifyAdminCredentials(username, password) {
+  const normalizedUsername = String(username || '').trim().toLowerCase()
+
+  if (!normalizedUsername || !password) {
+    return null
+  }
+
+  let user
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT id, username, password_hash, created_at FROM admin_users WHERE username = $1 LIMIT 1',
+      [normalizedUsername],
+    )
+
+    user = result.rows[0]
+  } else {
+    const db = ensureSqlite()
+    user = db
+      .prepare('SELECT id, username, password_hash, created_at FROM admin_users WHERE username = ? LIMIT 1')
+      .get(normalizedUsername)
+  }
+
+  if (!user || !verifyPassword(String(password), user.password_hash)) {
+    return null
+  }
+
+  return {
+    id: user.id,
+    username: user.username,
+    createdAt: user.created_at,
+  }
+}
+
+async function getAdminUserByUsername(username) {
+  const normalizedUsername = String(username || '').trim().toLowerCase()
+
+  if (!normalizedUsername) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT id, username, created_at FROM admin_users WHERE username = $1 LIMIT 1',
+      [normalizedUsername],
+    )
+
+    if (!result.rows[0]) {
+      return null
+    }
+
+    return {
+      id: result.rows[0].id,
+      username: result.rows[0].username,
+      createdAt: result.rows[0].created_at,
+    }
+  }
+
+  const db = ensureSqlite()
+  const user = db
+    .prepare('SELECT id, username, created_at FROM admin_users WHERE username = ? LIMIT 1')
+    .get(normalizedUsername)
+
+  if (!user) {
+    return null
+  }
+
+  return {
+    id: user.id,
+    username: user.username,
+    createdAt: user.created_at,
+  }
+}
+
 module.exports = {
+  createOrUpdateAdminUser,
+  getAdminUserByUsername,
   getStorageStatus,
   getRecentSubmissions,
   storeSubmission,
+  verifyAdminCredentials,
 }

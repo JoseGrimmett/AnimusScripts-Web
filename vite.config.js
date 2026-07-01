@@ -61,6 +61,95 @@ export default defineConfig(({ mode }) => {
             const submissionsHandler = await getSubmissionsHandler()
             await submissionsHandler(req, res)
           })
+
+          let adminLoginHandlerPromise
+          let adminSubmissionsHandlerPromise
+          let adminSessionHandlerPromise
+          let adminLogoutHandlerPromise
+          let adminMicrosoftStartHandlerPromise
+          let adminMicrosoftCallbackHandlerPromise
+
+          const getAdminLoginHandler = async () => {
+            if (!adminLoginHandlerPromise) {
+              adminLoginHandlerPromise = import('./api/admin/login.js').then((module) => module.default ?? module)
+            }
+
+            return adminLoginHandlerPromise
+          }
+
+          const getAdminSubmissionsHandler = async () => {
+            if (!adminSubmissionsHandlerPromise) {
+              adminSubmissionsHandlerPromise = import('./api/admin/submissions.js').then((module) => module.default ?? module)
+            }
+
+            return adminSubmissionsHandlerPromise
+          }
+
+          const getAdminSessionHandler = async () => {
+            if (!adminSessionHandlerPromise) {
+              adminSessionHandlerPromise = import('./api/admin/session.js').then((module) => module.default ?? module)
+            }
+
+            return adminSessionHandlerPromise
+          }
+
+          const getAdminLogoutHandler = async () => {
+            if (!adminLogoutHandlerPromise) {
+              adminLogoutHandlerPromise = import('./api/admin/logout.js').then((module) => module.default ?? module)
+            }
+
+            return adminLogoutHandlerPromise
+          }
+
+          const getAdminMicrosoftStartHandler = async () => {
+            if (!adminMicrosoftStartHandlerPromise) {
+              adminMicrosoftStartHandlerPromise = import('./api/admin/microsoft/start.js').then((module) => module.default ?? module)
+            }
+
+            return adminMicrosoftStartHandlerPromise
+          }
+
+          const getAdminMicrosoftCallbackHandler = async () => {
+            if (!adminMicrosoftCallbackHandlerPromise) {
+              adminMicrosoftCallbackHandlerPromise = import('./api/admin/microsoft/callback.js').then((module) => module.default ?? module)
+            }
+
+            return adminMicrosoftCallbackHandlerPromise
+          }
+
+          server.middlewares.use('/api/admin/login', async (req, res) => {
+            if (req.method === 'POST') {
+              req.body = await readRequestBody(req)
+            }
+
+            const adminLoginHandler = await getAdminLoginHandler()
+            await adminLoginHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/submissions', async (req, res) => {
+            const adminSubmissionsHandler = await getAdminSubmissionsHandler()
+            await adminSubmissionsHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/session', async (req, res) => {
+            const adminSessionHandler = await getAdminSessionHandler()
+            await adminSessionHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/logout', async (req, res) => {
+            const adminLogoutHandler = await getAdminLogoutHandler()
+            await adminLogoutHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/microsoft/start', async (req, res) => {
+            const adminMicrosoftStartHandler = await getAdminMicrosoftStartHandler()
+            await adminMicrosoftStartHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/microsoft/callback', async (req, res) => {
+            const adminMicrosoftCallbackHandler = await getAdminMicrosoftCallbackHandler()
+            await adminMicrosoftCallbackHandler(req, res)
+          })
         },
       },
     ],
