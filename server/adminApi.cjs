@@ -356,9 +356,26 @@ async function handleMicrosoftCallback(req, res) {
   })
 
   if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text()
-    console.error('[admin-microsoft] token exchange failed', errorText)
-    return sendJson(res, 401, { error: 'Microsoft sign-in failed' })
+    let providerError = 'microsoft_token_exchange_failed'
+    let providerDescription = ''
+
+    try {
+      const providerPayload = await tokenResponse.json()
+      providerError = providerPayload.error || providerError
+      providerDescription = providerPayload.error_description || ''
+      console.error('[admin-microsoft] token exchange failed', providerPayload)
+    } catch {
+      const errorText = await tokenResponse.text()
+      providerDescription = errorText
+      console.error('[admin-microsoft] token exchange failed', errorText)
+    }
+
+    return sendJson(res, 401, {
+      error: 'Microsoft sign-in failed',
+      providerError,
+      providerDescription,
+      hint: 'Verify MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET value, MICROSOFT_REDIRECT_URI, and Entra app redirect URIs.',
+    })
   }
 
   const tokenPayload = await tokenResponse.json()
