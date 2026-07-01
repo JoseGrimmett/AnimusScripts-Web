@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/submissions",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
