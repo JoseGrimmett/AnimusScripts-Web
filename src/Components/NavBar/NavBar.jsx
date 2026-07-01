@@ -65,6 +65,11 @@ const NavBar = () => {
           </NavLink>
         </li>
         <li>
+          <NavLink to="/admin" onClick={closeMenu} className={navClassName}>
+            Admin
+          </NavLink>
+        </li>
+        <li>
           <NavLink to="/contact" onClick={closeMenu} className="nav-cta">
             Contact
           </NavLink>
