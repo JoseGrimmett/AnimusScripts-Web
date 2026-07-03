@@ -276,7 +276,7 @@ const SubmissionsPage = () => {
                 placeholder="Enter password"
               />
               <button className="btn dark-btn" type="submit" disabled={isLoading}>
-                {session?.token ? "Sign in again" : "Sign in"}
+                {session?.user ? "Sign in again" : "Sign in"}
               </button>
               <button className="btn ghost-btn" type="button" onClick={handleLogout}>
                 Sign out
@@ -304,7 +304,7 @@ const SubmissionsPage = () => {
 
         {status ? <p className="submissions-status">{status}</p> : null}
 
-        {session?.token ? (
+        {session?.user ? (
           <section className="submissions-list" aria-label="Recent submissions">
             {submissions.map((submission) => (
               <article className="submission-card card-raise" key={submission.requestId}>
