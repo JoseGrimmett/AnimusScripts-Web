@@ -1,0 +1,202 @@
+.portal-main {
+  padding-top: 6.5rem;
+  padding-bottom: 3rem;
+}
+
+.portal-hero {
+  max-width: 860px;
+  margin-bottom: 1.25rem;
+}
+
+.portal-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+}
+
+.portal-hero p {
+  color: rgba(248, 250, 252, 0.8);
+  line-height: 1.7;
+}
+
+.portal-signed-in {
+  margin-top: 0.9rem;
+  color: #a5d0ff;
+}
+
+.portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.portal-auth,
+.portal-ticket-create {
+  max-width: 760px;
+  padding: 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 1rem;
+}
+
+.portal-mode-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.portal-mode-toggle button {
+  padding: 0.45rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: #dcecff;
+  cursor: pointer;
+}
+
+.portal-mode-toggle button.active {
+  background: rgba(122, 162, 255, 0.25);
+  color: #ffffff;
+}
+
+.portal-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.portal-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: #dcecff;
+}
+
+.portal-form input,
+.portal-form textarea {
+  width: 100%;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(5, 12, 24, 0.75);
+  color: #eef6ff;
+}
+
+.portal-form textarea {
+  resize: vertical;
+}
+
+.portal-ticket-list h2,
+.portal-ticket-create h2 {
+  margin-bottom: 0.9rem;
+}
+
+.portal-ticket-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.portal-ticket {
+  padding: 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.portal-ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.portal-ticket h3 {
+  font-size: 1.05rem;
+}
+
+.portal-ticket p {
+  color: rgba(240, 248, 255, 0.8);
+  line-height: 1.6;
+}
+
+.portal-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.75rem;
+  color: rgba(219, 233, 246, 0.7);
+  font-size: 0.88rem;
+}
+
+.portal-ticket-actions {
+  margin-top: 0.85rem;
+}
+
+.portal-ticket-detail {
+  max-width: 860px;
+  margin-top: 1rem;
+  padding: 1.15rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.portal-ticket-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.65rem;
+}
+
+.portal-ticket-detail-message {
+  color: rgba(240, 248, 255, 0.86);
+  line-height: 1.6;
+}
+
+.portal-timeline-title {
+  margin-top: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.portal-timeline {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.portal-timeline-item {
+  padding: 0.8rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 12, 24, 0.5);
+}
+
+.portal-timeline-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.portal-timeline-item-head span {
+  color: rgba(219, 233, 246, 0.7);
+  font-size: 0.84rem;
+}
+
+.ticket-status {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 162, 255, 0.35);
+  background: rgba(122, 162, 255, 0.15);
+  color: #d9ebff;
+}
+
+.portal-status {
+  margin-top: 0.8rem;
+  color: rgba(244, 250, 255, 0.76);
+}

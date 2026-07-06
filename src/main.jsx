@@ -10,6 +10,9 @@ import WhatWeBuildPage from './Pages/WhatWeBuildPage.jsx';
 import AboutPage from './Pages/AboutPage.jsx';
 import ContactPage from './Pages/ContactPage.jsx';
 import SubmissionsPage from './Pages/SubmissionsPage.jsx';
+import PortalPage from './Pages/PortalPage.jsx';
+import EmployeeRouteGuard from './Components/RouteGuards/EmployeeRouteGuard.jsx';
+import ToastHost from './Components/ToastHost/ToastHost.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -20,11 +23,27 @@ createRoot(document.getElementById('root')).render(
         <Route path="/services/:slug" element={<ServiceDetailPage />} />
         <Route path="/what-we-build" element={<WhatWeBuildPage />} />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/admin" element={<SubmissionsPage />} />
+        <Route path="/portal" element={<PortalPage />} />
+        <Route
+          path="/admin"
+          element={(
+            <EmployeeRouteGuard>
+              <SubmissionsPage />
+            </EmployeeRouteGuard>
+          )}
+        />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/submissions" element={<SubmissionsPage />} />
+        <Route
+          path="/submissions"
+          element={(
+            <EmployeeRouteGuard>
+              <SubmissionsPage />
+            </EmployeeRouteGuard>
+          )}
+        />
         <Route path="/pricing" element={<PricingPage />} />
       </Routes>
+      <ToastHost />
     </BrowserRouter>
   </StrictMode>,
 );

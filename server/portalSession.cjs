@@ -1,14 +1,13 @@
 const crypto = require('node:crypto')
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 8
-const STATE_TTL_MS = 1000 * 60 * 10
-const SESSION_COOKIE_NAME = 'animus_admin_session'
+const PORTAL_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
+const PORTAL_SESSION_COOKIE_NAME = 'animus_portal_session'
 
 function getSecret() {
-  const secret = process.env.ADMIN_AUTH_SECRET || process.env.ADMIN_SUBMISSIONS_KEY || ''
+  const secret = process.env.USER_AUTH_SECRET || process.env.ADMIN_AUTH_SECRET || ''
 
   if (!secret) {
-    throw new Error('Missing ADMIN_AUTH_SECRET (or ADMIN_SUBMISSIONS_KEY fallback) for admin authentication')
+    throw new Error('Missing USER_AUTH_SECRET (or ADMIN_AUTH_SECRET fallback) for portal authentication')
   }
 
   return secret
@@ -37,21 +36,23 @@ function signTokenSegment(value, secret) {
   )
 }
 
-function createSignedPayload(payload, ttlMs = SESSION_TTL_MS) {
+function createPortalToken(user) {
   const secret = getSecret()
-  const now = Date.now()
-  const data = {
-    ...payload,
-    iat: now,
-    exp: now + ttlMs,
+  const payload = {
+    type: 'portal_session',
+    sub: String(user.id),
+    email: user.email,
+    displayName: user.displayName || null,
+    iat: Date.now(),
+    exp: Date.now() + PORTAL_SESSION_TTL_MS,
   }
 
-  const encodedPayload = encodeBase64Url(JSON.stringify(data))
+  const encodedPayload = encodeBase64Url(JSON.stringify(payload))
   const signature = signTokenSegment(encodedPayload, secret)
   return `${encodedPayload}.${signature}`
 }
 
-function verifySignedPayload(token) {
+function verifyPortalToken(token) {
   if (!token || typeof token !== 'string' || !token.includes('.')) {
     return null
   }
@@ -81,71 +82,31 @@ function verifySignedPayload(token) {
   try {
     const payload = JSON.parse(decodeBase64Url(encodedPayload))
 
-    if (!payload?.exp || Date.now() > Number(payload.exp)) {
+    if (payload.type !== 'portal_session' || !payload.exp || Date.now() > Number(payload.exp)) {
       return null
     }
 
-    return payload
+    return {
+      id: payload.sub,
+      email: payload.email,
+      displayName: payload.displayName,
+      issuedAt: payload.iat,
+      expiresAt: payload.exp,
+    }
   } catch {
     return null
   }
 }
 
-function createAdminToken(user) {
-  return createSignedPayload({
-    type: 'admin_session',
-    sub: String(user.id),
-    username: user.username,
-    role: user.role || 'employee',
-  })
-}
-
-function verifyAdminToken(token) {
-  const payload = verifySignedPayload(token)
-
-  if (!payload || payload.type !== 'admin_session') {
-    return null
-  }
-
-  return {
-    id: payload.sub,
-    username: payload.username,
-    role: payload.role || 'employee',
-    issuedAt: payload.iat,
-    expiresAt: payload.exp,
-  }
-}
-
-function createOAuthState(returnTo = '/admin') {
-  return createSignedPayload(
-    {
-      type: 'microsoft_oauth_state',
-      returnTo,
-      nonce: crypto.randomBytes(12).toString('hex'),
-    },
-    STATE_TTL_MS,
-  )
-}
-
-function verifyOAuthState(value) {
-  const payload = verifySignedPayload(value)
-
-  if (!payload || payload.type !== 'microsoft_oauth_state') {
-    return null
-  }
-
-  return payload
-}
-
-function serializeSessionCookie(token) {
+function serializePortalSessionCookie(token) {
   const secure = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
   const sameSite = secure ? 'None' : 'Lax'
   const parts = [
-    `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`,
+    `${PORTAL_SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`,
     'Path=/',
     'HttpOnly',
     `SameSite=${sameSite}`,
-    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
+    `Max-Age=${Math.floor(PORTAL_SESSION_TTL_MS / 1000)}`,
   ]
 
   if (secure) {
@@ -155,11 +116,11 @@ function serializeSessionCookie(token) {
   return parts.join('; ')
 }
 
-function serializeClearedSessionCookie() {
+function serializeClearedPortalSessionCookie() {
   const secure = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
   const sameSite = secure ? 'None' : 'Lax'
   const parts = [
-    `${SESSION_COOKIE_NAME}=`,
+    `${PORTAL_SESSION_COOKIE_NAME}=`,
     'Path=/',
     'HttpOnly',
     `SameSite=${sameSite}`,
@@ -195,14 +156,10 @@ function parseCookies(req) {
 }
 
 module.exports = {
-  SESSION_COOKIE_NAME,
-  createOAuthState,
-  createSignedPayload,
-  createAdminToken,
+  PORTAL_SESSION_COOKIE_NAME,
+  createPortalToken,
   parseCookies,
-  serializeClearedSessionCookie,
-  serializeSessionCookie,
-  verifyOAuthState,
-  verifySignedPayload,
-  verifyAdminToken,
+  serializeClearedPortalSessionCookie,
+  serializePortalSessionCookie,
+  verifyPortalToken,
 }

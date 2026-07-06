@@ -9,8 +9,14 @@ const {
   verifyOAuthState,
 } = require('./adminSession.cjs')
 const {
+  assignAdminTicket,
+  createOrUpdateAdminUser,
+  getAdminTicketDetail,
+  getAdminTickets,
   getAdminUserByUsername,
+  listAdminUsers,
   getRecentSubmissions,
+  updateAdminTicketStatus,
   verifyAdminCredentials,
 } = require('./contactStore.cjs')
 
@@ -92,6 +98,18 @@ function setSessionCookie(res, token) {
 
 function clearSessionCookie(res) {
   res.setHeader('Set-Cookie', serializeClearedSessionCookie())
+}
+
+function hasEmployeeAccess(session) {
+  if (!session) {
+    return false
+  }
+
+  return session.role === 'employee' || session.role === 'admin'
+}
+
+function hasAdminAccess(session) {
+  return Boolean(session && session.role === 'admin')
 }
 
 function getOrigin(req) {
@@ -199,6 +217,7 @@ async function handleAdminLogin(req, res) {
     user: {
       id: user.id,
       username: user.username,
+      role: user.role || 'employee',
     },
   })
 }
@@ -220,6 +239,7 @@ async function handleAdminSession(req, res) {
     user: {
       id: session.id,
       username: session.username,
+      role: session.role || 'employee',
     },
     expiresAt: session.expiresAt,
   })
@@ -250,6 +270,10 @@ async function handleAdminSubmissions(req, res) {
     return sendJson(res, 401, { error: 'Unauthorized' })
   }
 
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
   const url = new URL(req.url, 'http://localhost')
   const limit = url.searchParams.get('limit') || 100
   const submissions = await getRecentSubmissions(limit)
@@ -260,9 +284,111 @@ async function handleAdminSubmissions(req, res) {
     submissions,
     session: {
       username: session.username,
+      role: session.role,
       expiresAt: session.expiresAt,
     },
   })
+}
+
+async function handleAdminTickets(req, res) {
+  const session = getAdminSession(req)
+
+  if (!session) {
+    return sendJson(res, 401, { error: 'Unauthorized' })
+  }
+
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
+  if (req.method === 'GET') {
+    const url = new URL(req.url, 'http://localhost')
+    const requestId = String(url.searchParams.get('requestId') || '').trim()
+
+    if (requestId) {
+      const ticket = await getAdminTicketDetail(requestId)
+
+      if (!ticket) {
+        return sendJson(res, 404, { error: 'Ticket not found' })
+      }
+
+      return sendJson(res, 200, {
+        ok: true,
+        ticket,
+      })
+    }
+
+    const limit = url.searchParams.get('limit') || 200
+    const tickets = await getAdminTickets(limit)
+    return sendJson(res, 200, {
+      ok: true,
+      count: tickets.length,
+      tickets,
+    })
+  }
+
+  if (req.method === 'POST') {
+    const payload = parseBody(req.body)
+
+    if (payload.action === 'status') {
+      const statusUpdate = await updateAdminTicketStatus(payload.requestId, payload.status, session.username, payload.note)
+
+      return sendJson(res, 200, {
+        ok: true,
+        statusUpdate,
+      })
+    }
+
+    const assignment = await assignAdminTicket(payload.requestId, payload.assignedTo, session.username)
+
+    return sendJson(res, 200, {
+      ok: true,
+      assignment,
+    })
+  }
+
+  res.setHeader('Allow', 'GET, POST')
+  return sendJson(res, 405, { error: 'Method not allowed' })
+}
+
+async function handleAdminUsers(req, res) {
+  const session = getAdminSession(req)
+
+  if (!session) {
+    return sendJson(res, 401, { error: 'Unauthorized' })
+  }
+
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
+  if (req.method === 'GET') {
+    const url = new URL(req.url, 'http://localhost')
+    const limit = url.searchParams.get('limit') || 200
+    const users = await listAdminUsers(limit)
+    return sendJson(res, 200, {
+      ok: true,
+      count: users.length,
+      users,
+    })
+  }
+
+  if (req.method === 'POST') {
+    if (!hasAdminAccess(session)) {
+      return sendJson(res, 403, { error: 'Admin role is required' })
+    }
+
+    const payload = parseBody(req.body)
+    const user = await createOrUpdateAdminUser(payload.username, payload.password, payload.role)
+
+    return sendJson(res, 200, {
+      ok: true,
+      user,
+    })
+  }
+
+  res.setHeader('Allow', 'GET, POST')
+  return sendJson(res, 405, { error: 'Method not allowed' })
 }
 
 async function handleMicrosoftStart(req, res) {
@@ -426,6 +552,8 @@ module.exports = {
   handleAdminLogin,
   handleAdminLogout,
   handleAdminSession,
+  handleAdminTickets,
+  handleAdminUsers,
   handleMicrosoftCallback,
   handleMicrosoftStart,
   handleAdminSubmissions,

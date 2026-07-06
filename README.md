@@ -12,6 +12,7 @@ The site is positioned as an operational software, automation, and business inte
 - a database-backed submissions store
 - an authenticated admin page at `/admin` (also available at `/submissions`)
 - optional Microsoft 365 (Office) admin sign-in
+- a client portal at `/portal` for user sign up/sign in and ticket tracking
 
 The app lives in the nested `AnimusScripts-Web/` folder, while the workspace root also contains deployment and API files used by Vercel.
 
@@ -45,8 +46,9 @@ Main routes currently include:
 - `/pricing`
 - `/admin`
 - `/submissions`
+- `/portal`
 
-The Vite dev server includes local middleware for `/api/contact` and all `/api/admin/*` auth routes so the browser matches the production flow during development.
+The Vite dev server includes local middleware for `/api/contact`, `/api/admin/*`, and `/api/portal/*` so the browser matches the production flow during development.
 
 ## Contact Intake Architecture
 
@@ -99,6 +101,28 @@ Requirements:
 
 The Office login does not bypass your database authorization. It maps Microsoft identity to an existing admin account.
 
+## Client Portal (Tickets)
+
+The client portal page at `/portal` supports:
+
+- `POST /api/portal/signup` to create an account
+- `POST /api/portal/login` to sign in
+- `GET /api/portal/session` to restore auth session
+- `POST /api/portal/logout` to clear session
+- `GET /api/portal/tickets` to list the signed-in user's tickets
+- `POST /api/portal/tickets` to create a new ticket
+
+Portal sessions use a signed HTTP-only cookie and per-user ticket filtering by account email.
+Portal signup/login includes in-memory request throttling with temporary lockout to reduce brute-force attempts.
+
+Optional portal auth throttling configuration:
+
+- `PORTAL_AUTH_MAX_ATTEMPTS` (default `5`)
+- `PORTAL_AUTH_WINDOW_MS` (default `600000`)
+- `PORTAL_AUTH_LOCK_MS` (default `900000`)
+
+Ticket detail is available by request id through `GET /api/portal/tickets?requestId=<id>` and includes timeline events.
+
 ## Neon Setup
 
 Neon is the recommended production database for this project.
@@ -122,6 +146,7 @@ Optional notification settings:
 Optional internal access control for the submissions page:
 
 - `ADMIN_AUTH_SECRET`
+- `USER_AUTH_SECRET`
 - `ADMIN_SUBMISSIONS_KEY`
 
 Optional Office login settings:
@@ -145,6 +170,7 @@ RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=Animus Scripts <onboarding@resend.dev>
 CONTACT_TO_EMAIL=info@animusscripts.com
 ADMIN_AUTH_SECRET=choose-a-long-random-session-secret
+USER_AUTH_SECRET=choose-a-long-random-portal-session-secret
 ADMIN_SUBMISSIONS_KEY=choose-a-long-random-internal-key
 MICROSOFT_TENANT_ID=common
 MICROSOFT_CLIENT_ID=your-entra-app-client-id
@@ -192,6 +218,23 @@ The admin credential table stores:
 
 - `username`
 - `password_hash`
+- `created_at`
+
+The portal user table stores:
+
+- `email`
+- `display_name`
+- `password_hash`
+- `created_at`
+
+The portal ticket table stores:
+
+- `request_id`
+- `user_email`
+- `subject`
+- `message`
+- `status`
+- `source`
 - `created_at`
 
 ## Notes
