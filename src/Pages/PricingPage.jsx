@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { animate, stagger } from "animejs";
 import "./PricingPage.css";
 import ROICalculator from "../Components/ROICalculator/ROICalculator";
 import PricingComparison from "../Components/PricingComparison/PricingComparison";
 import LeadCapture from "../Components/LeadCapture/LeadCapture";
 import NavBar from "../Components/NavBar/NavBar";
 import Footer from "../Components/Footer/Footer";
+import useAnimeReveal from "../hooks/useAnimeReveal";
 
 const pricingTiers = [
   {
@@ -131,7 +133,47 @@ const faqs = [
 ];
 
 const PricingPage = () => {
+  const heroTitleRef = useRef(null);
+  const heroCopyRef = useRef(null);
+  const pricingSectionRef = useRef(null);
+  const engagementSectionRef = useRef(null);
+  const comparisonSectionRef = useRef(null);
+  const roiSectionRef = useRef(null);
+  const faqSectionRef = useRef(null);
+  const leadSectionRef = useRef(null);
+  const ctaSectionRef = useRef(null);
   const [expandedFaq, setExpandedFaq] = React.useState(null);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const heroNodes = [heroTitleRef.current, heroCopyRef.current].filter(Boolean);
+
+    if (prefersReducedMotion) {
+      heroNodes.forEach((node) => {
+        node.style.opacity = "1";
+        node.style.transform = "none";
+      });
+      return undefined;
+    }
+
+    animate(heroNodes, {
+      opacity: [0, 1],
+      y: [22, 0],
+      delay: stagger(120),
+      duration: 760,
+      ease: "outCubic",
+    });
+
+    return undefined;
+  }, []);
+
+  useAnimeReveal(pricingSectionRef, ".reveal-item", { delayStep: 90, initialOffset: 24 });
+  useAnimeReveal(engagementSectionRef, ".reveal-item", { delayStep: 95, initialOffset: 22 });
+  useAnimeReveal(comparisonSectionRef, ".reveal-item", { delayStep: 40, initialOffset: 12, duration: 620 });
+  useAnimeReveal(roiSectionRef, ".reveal-item", { delayStep: 40, initialOffset: 12, duration: 620 });
+  useAnimeReveal(faqSectionRef, ".reveal-item", { delayStep: 75, initialOffset: 18 });
+  useAnimeReveal(leadSectionRef, ".reveal-item", { delayStep: 40, initialOffset: 14, duration: 640 });
+  useAnimeReveal(ctaSectionRef, ".reveal-item", { delayStep: 40, initialOffset: 14, duration: 640 });
 
   return (
     <div>
@@ -141,8 +183,8 @@ const PricingPage = () => {
       <section className="pricing-hero">
         <div className="container">
           <div className="pricing-hero-content">
-            <h1>Transparent pricing for practical systems</h1>
-            <p>
+            <h1 ref={heroTitleRef}>Transparent pricing for practical systems</h1>
+            <p ref={heroCopyRef}>
               Fixed-price discovery, project-based implementation, or ongoing support. Choose the model that fits your needs.
             </p>
           </div>
@@ -150,16 +192,19 @@ const PricingPage = () => {
       </section>
 
       {/* Tiers */}
-      <section className="pricing-tiers section-reveal" id="pricing-tiers">
+      <section className="pricing-tiers" id="pricing-tiers" ref={pricingSectionRef}>
         <div className="container">
-          <div className="pricing-intro">
+          <div className="pricing-intro reveal-item">
             <h2>Engagement models</h2>
             <p>Start with discovery. Scale with implementation. Sustain with partnership.</p>
           </div>
 
           <div className="pricing-grid">
             {pricingTiers.map((tier, idx) => (
-              <div key={idx} className={`pricing-card ${tier.isPrimary ? "is-primary" : ""} card-raise`}>
+              <div
+                key={idx}
+                className={`pricing-card ${tier.isPrimary ? "is-primary" : ""} card-raise reveal-item`}
+              >
                 <div className="pricing-card-header">
                   <h3>{tier.name}</h3>
                   <p className="pricing-desc">{tier.description}</p>
@@ -195,16 +240,16 @@ const PricingPage = () => {
       </section>
 
       {/* Engagement Models */}
-      <section className="engagement-models section-reveal">
+      <section className="engagement-models" ref={engagementSectionRef}>
         <div className="container">
-          <div className="engagement-header">
+          <div className="engagement-header reveal-item">
             <h2>Choose your engagement model</h2>
             <p>We work the way that works best for you</p>
           </div>
 
           <div className="engagement-grid">
             {engagementModels.map((model, idx) => (
-              <div key={idx} className="engagement-card card-raise">
+              <div key={idx} className="engagement-card card-raise reveal-item">
                 <h3>{model.title}</h3>
                 <p className="engagement-desc">{model.description}</p>
 
@@ -238,23 +283,23 @@ const PricingPage = () => {
       </section>
 
       {/* Feature Comparison */}
-      <section className="pricing-comparison-section section-reveal">
-        <div className="container">
+      <section className="pricing-comparison-section" ref={comparisonSectionRef}>
+        <div className="container reveal-item">
           <PricingComparison />
         </div>
       </section>
 
       {/* ROI Calculator */}
-      <section className="pricing-roi section-reveal">
-        <div className="container">
+      <section className="pricing-roi" ref={roiSectionRef}>
+        <div className="container reveal-item">
           <ROICalculator />
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="pricing-faq section-reveal">
+      <section className="pricing-faq" ref={faqSectionRef}>
         <div className="container">
-          <div className="faq-header">
+          <div className="faq-header reveal-item">
             <h2>Questions?</h2>
             <p>We've answered the most common ones</p>
           </div>
@@ -263,7 +308,7 @@ const PricingPage = () => {
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className={`faq-item card-raise ${expandedFaq === idx ? "is-expanded" : ""}`}
+                className={`faq-item card-raise reveal-item ${expandedFaq === idx ? "is-expanded" : ""}`}
               >
                 <button
                   className="faq-question"
@@ -282,8 +327,8 @@ const PricingPage = () => {
       </section>
 
       {/* Lead Capture */}
-      <section className="pricing-lead-capture section-reveal">
-        <div className="container">
+      <section className="pricing-lead-capture" ref={leadSectionRef}>
+        <div className="container reveal-item">
           <div className="lead-capture-wrapper">
             <LeadCapture 
               title="Get your personalized ROI calculation"
@@ -295,9 +340,9 @@ const PricingPage = () => {
       </section>
 
       {/* CTA */}
-      <section className="pricing-cta section-reveal">
+      <section className="pricing-cta" ref={ctaSectionRef}>
         <div className="container">
-          <div className="pricing-cta-card card-raise">
+          <div className="pricing-cta-card card-raise reveal-item">
             <h2>Ready to talk about your specific needs?</h2>
             <p>We'll customize a proposal based on your timeline, team size, and budget.</p>
             <div className="pricing-cta-actions">
