@@ -204,14 +204,21 @@ const NavBar = () => {
             </NavLink>
           </li>
           {!hasAnySession && !isAuthLoading ? (
-            <li>
+            <li className="auth-nav-item">
               <NavLink to="/admin" onClick={closeMenu} className={navClassName}>
                 Employee Login
               </NavLink>
             </li>
           ) : null}
           {!hasAnySession && !isAuthLoading ? (
-            <li>
+            <li className="auth-nav-item">
+              <a href="/api/admin/microsoft/start" onClick={closeMenu} className="auth-nav-link">
+                Windows Login
+              </a>
+            </li>
+          ) : null}
+          {!hasAnySession && !isAuthLoading ? (
+            <li className="auth-nav-item">
               <NavLink to="/portal" onClick={closeMenu} className={navClassName}>
                 Client Login
               </NavLink>
@@ -255,6 +262,7 @@ const NavBar = () => {
           {!hasAnySession && !isAuthLoading ? (
             <div className="utility-auth-links">
               <Link to="/admin" className="utility-auth-link" onClick={closeMenu}>Employee Login</Link>
+              <a className="utility-auth-link" href="/api/admin/microsoft/start">Windows Login</a>
               <Link to="/portal" className="utility-auth-link" onClick={closeMenu}>Client Login</Link>
             </div>
           ) : null}
