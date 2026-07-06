@@ -252,6 +252,26 @@
   gap: 0.75rem;
 }
 
+.crm-action-panel {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.crm-action-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 12, 24, 0.5);
+}
+
+.crm-action-card strong {
+  color: #f8fafc;
+}
+
 @media (max-width: 900px) {
   .employee-workspace {
     grid-template-columns: 1fr;
@@ -276,6 +296,10 @@
   }
 
   .assignment-row {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-action-panel {
     grid-template-columns: 1fr;
   }
 }

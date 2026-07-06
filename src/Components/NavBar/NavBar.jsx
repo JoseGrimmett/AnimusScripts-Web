@@ -9,6 +9,7 @@ const NavBar = () => {
   const [sticky, setSticky] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [workspacesMenuOpen, setWorkspacesMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
   const [portalUser, setPortalUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -76,8 +77,9 @@ const NavBar = () => {
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
-      if (!event.target.closest(".utility-user")) {
+      if (!event.target.closest(".utility-user") && !event.target.closest(".utility-workspaces")) {
         setUserMenuOpen(false);
+        setWorkspacesMenuOpen(false);
       }
     };
 
@@ -92,11 +94,17 @@ const NavBar = () => {
   const closeMenu = () => {
     setMobileMenu(false);
     setUserMenuOpen(false);
+    setWorkspacesMenuOpen(false);
   };
 
   const toggleUserMenu = (event) => {
     event.stopPropagation();
     setUserMenuOpen((prev) => !prev);
+  };
+
+  const toggleWorkspacesMenu = (event) => {
+    event.stopPropagation();
+    setWorkspacesMenuOpen((prev) => !prev);
   };
 
   const navClassName = ({ isActive }) => (isActive ? "nav-active" : "");
@@ -127,6 +135,17 @@ const NavBar = () => {
   };
 
   const roleLabel = adminUser?.role || (portalUser ? "client" : "guest");
+  const activeWorkspace = useMemo(() => {
+    if (location.pathname === "/admin/crm") {
+      return "crm";
+    }
+
+    if (location.pathname === "/admin" || location.pathname === "/submissions") {
+      return "tickets";
+    }
+
+    return null;
+  }, [location.pathname]);
 
   return (
     <>
@@ -161,9 +180,16 @@ const NavBar = () => {
             </NavLink>
           </li>
           {isEmployee ? (
-            <li>
+            <li className="employee-nav-item">
               <NavLink to="/admin" onClick={closeMenu} className={navClassName}>
-                Admin
+                Tickets
+              </NavLink>
+            </li>
+          ) : null}
+          {isEmployee ? (
+            <li className="employee-nav-item">
+              <NavLink to="/admin/crm" onClick={closeMenu} className={navClassName}>
+                CRM
               </NavLink>
             </li>
           ) : null}
@@ -195,6 +221,37 @@ const NavBar = () => {
 
         <div className="nav-utility">
           <div className="utility-message">Operational Service Desk</div>
+          {isEmployee ? (
+            <div className="utility-workspaces">
+              <button className="utility-workspaces-btn" onClick={toggleWorkspacesMenu} aria-expanded={workspacesMenuOpen}>
+                Workspaces
+              </button>
+
+              {workspacesMenuOpen && (
+                <div className="utility-menu utility-workspaces-menu">
+                  <p className="utility-menu-title">Employee Workspaces</p>
+                  <p className="utility-menu-copy">Choose the internal area you want to open.</p>
+                  <div className="utility-menu-divider" />
+                  <Link
+                    to="/admin"
+                    onClick={() => setWorkspacesMenuOpen(false)}
+                    className={activeWorkspace === "tickets" ? "utility-menu-link active" : "utility-menu-link"}
+                  >
+                    <span className="utility-menu-link-title">Ticket Workspace</span>
+                    <span className="utility-menu-link-subtitle">Queue, assignment, and ticket status</span>
+                  </Link>
+                  <Link
+                    to="/admin/crm"
+                    onClick={() => setWorkspacesMenuOpen(false)}
+                    className={activeWorkspace === "crm" ? "utility-menu-link active" : "utility-menu-link"}
+                  >
+                    <span className="utility-menu-link-title">CRM Workspace</span>
+                    <span className="utility-menu-link-subtitle">Contacts, leads, and CRM records</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : null}
           {!hasAnySession && !isAuthLoading ? (
             <div className="utility-auth-links">
               <Link to="/admin" className="utility-auth-link" onClick={closeMenu}>Employee Login</Link>
@@ -203,23 +260,22 @@ const NavBar = () => {
           ) : null}
           {hasAnySession ? (
             <div className="utility-user">
-            <button className="utility-user-btn" onClick={toggleUserMenu} aria-expanded={userMenuOpen}>
-              <span className="user-avatar">AS</span>
-              <span className="user-label">{userLabel}</span>
-            </button>
+              <button className="utility-user-btn" onClick={toggleUserMenu} aria-expanded={userMenuOpen}>
+                <span className="user-avatar">AS</span>
+                <span className="user-label">{userLabel}</span>
+              </button>
 
-            {userMenuOpen && (
-              <div className="utility-menu">
-                <p className="utility-menu-title">User Options</p>
-                <span className="utility-role-badge">Role: {roleLabel}</span>
-                <Link to="/portal" onClick={() => setUserMenuOpen(false)}>My Tickets</Link>
-                {isEmployee ? <Link to="/admin" onClick={() => setUserMenuOpen(false)}>Employee Dashboard</Link> : null}
-                <Link to="/about" onClick={() => setUserMenuOpen(false)}>Profile Info</Link>
-                <Link to="/services" onClick={() => setUserMenuOpen(false)}>Services</Link>
-                <Link to="/contact" onClick={() => setUserMenuOpen(false)}>Support</Link>
-                <button type="button" onClick={handleSignOut}>Sign Out</button>
-              </div>
-            )}
+              {userMenuOpen && (
+                <div className="utility-menu">
+                  <p className="utility-menu-title">User Options</p>
+                  <span className="utility-role-badge">Role: {roleLabel}</span>
+                  <Link to="/portal" onClick={() => setUserMenuOpen(false)}>My Tickets</Link>
+                  <Link to="/about" onClick={() => setUserMenuOpen(false)}>Profile Info</Link>
+                  <Link to="/services" onClick={() => setUserMenuOpen(false)}>Services</Link>
+                  <Link to="/contact" onClick={() => setUserMenuOpen(false)}>Support</Link>
+                  <button type="button" onClick={handleSignOut}>Sign Out</button>
+                </div>
+              )}
             </div>
           ) : null}
         </div>

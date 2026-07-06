@@ -11,11 +11,18 @@ const {
 const {
   assignAdminTicket,
   createOrUpdateAdminUser,
+  createCrmRecord,
   getAdminTicketDetail,
   getAdminTickets,
   getAdminUserByUsername,
+  getCrmActivityByRequestId,
+  findCrmTicketByRequestId,
+  getCrmRecord,
   listAdminUsers,
+  listCrmRecords,
   getRecentSubmissions,
+  deleteCrmRecord,
+  updateCrmRecord,
   updateAdminTicketStatus,
   verifyAdminCredentials,
 } = require('./contactStore.cjs')
@@ -391,6 +398,210 @@ async function handleAdminUsers(req, res) {
   return sendJson(res, 405, { error: 'Method not allowed' })
 }
 
+async function handleAdminCrm(req, res) {
+  const session = getAdminSession(req)
+
+  if (!session) {
+    return sendJson(res, 401, { error: 'Unauthorized' })
+  }
+
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
+  const url = new URL(req.url, 'http://localhost')
+  const entity = String(url.searchParams.get('entity') || '').trim().toLowerCase()
+  const entityFromBody = (parseBody(req.body) || {}).entity
+  const normalizedEntity = entity || String(entityFromBody || '').trim().toLowerCase()
+
+  if (!normalizedEntity) {
+    return sendJson(res, 400, { error: 'entity is required' })
+  }
+
+  try {
+    if (req.method === 'GET') {
+      const recordId = url.searchParams.get('id')
+
+      if (recordId) {
+        const record = await getCrmRecord(normalizedEntity, recordId)
+
+        if (!record) {
+          return sendJson(res, 404, { error: 'Record not found' })
+        }
+
+        return sendJson(res, 200, { ok: true, record })
+      }
+
+      const limit = url.searchParams.get('limit') || 100
+      const records = await listCrmRecords(normalizedEntity, limit)
+      return sendJson(res, 200, { ok: true, count: records.length, records })
+    }
+
+    if (req.method === 'POST') {
+      const payload = parseBody(req.body)
+      const record = await createCrmRecord(normalizedEntity, payload.data || payload)
+      return sendJson(res, 201, { ok: true, record })
+    }
+
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      const payload = parseBody(req.body)
+      const recordId = url.searchParams.get('id') || payload.id
+
+      if (!recordId) {
+        return sendJson(res, 400, { error: 'id is required' })
+      }
+
+      const record = await updateCrmRecord(normalizedEntity, recordId, payload.data || payload)
+      return sendJson(res, 200, { ok: true, record })
+    }
+
+    if (req.method === 'DELETE') {
+      const payload = parseBody(req.body)
+      const recordId = url.searchParams.get('id') || payload.id
+
+      if (!recordId) {
+        return sendJson(res, 400, { error: 'id is required' })
+      }
+
+      const deleted = await deleteCrmRecord(normalizedEntity, recordId)
+
+      if (!deleted) {
+        return sendJson(res, 404, { error: 'Record not found' })
+      }
+
+      return sendJson(res, 200, { ok: true, deleted: true })
+    }
+
+    res.setHeader('Allow', 'GET, POST, PATCH, PUT, DELETE')
+    return sendJson(res, 405, { error: 'Method not allowed' })
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message || 'Failed to process CRM request' })
+  }
+}
+
+async function handleAdminCrmActions(req, res) {
+  const session = getAdminSession(req)
+
+  if (!session) {
+    return sendJson(res, 401, { error: 'Unauthorized' })
+  }
+
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    return sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const payload = parseBody(req.body)
+  const requestId = String(payload.requestId || '').trim()
+  const action = String(payload.action || '').trim().toLowerCase()
+
+  if (!requestId) {
+    return sendJson(res, 400, { error: 'requestId is required' })
+  }
+
+  const crmTicket = await findCrmTicketByRequestId(requestId)
+
+  if (!crmTicket) {
+    return sendJson(res, 404, { error: 'CRM ticket not found for this request' })
+  }
+
+  try {
+    if (action === 'note') {
+      const body = String(payload.body || '').trim()
+
+      if (!body) {
+        return sendJson(res, 400, { error: 'body is required' })
+      }
+
+      const note = await createCrmRecord('notes', {
+        ticketId: crmTicket.id,
+        organizationId: crmTicket.organizationId || null,
+        contactId: crmTicket.contactId || null,
+        body,
+        visibility: 'internal',
+        createdByAdminId: session.id,
+      })
+
+      return sendJson(res, 201, {
+        ok: true,
+        record: note,
+      })
+    }
+
+    if (action === 'task') {
+      const title = String(payload.title || '').trim()
+      const description = String(payload.description || '').trim() || null
+      const dueDate = String(payload.dueDate || '').trim() || null
+
+      if (!title) {
+        return sendJson(res, 400, { error: 'title is required' })
+      }
+
+      const task = await createCrmRecord('tasks', {
+        ticketId: crmTicket.id,
+        organizationId: crmTicket.organizationId || null,
+        contactId: crmTicket.contactId || null,
+        title,
+        description,
+        status: 'open',
+        priority: 'normal',
+        dueDate,
+        assignedAdminId: crmTicket.ownerAdminId || null,
+        createdByAdminId: session.id,
+      })
+
+      return sendJson(res, 201, {
+        ok: true,
+        record: task,
+      })
+    }
+
+    return sendJson(res, 400, { error: 'Unsupported action' })
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message || 'Failed to create CRM action' })
+  }
+}
+
+async function handleAdminCrmActivity(req, res) {
+  const session = getAdminSession(req)
+
+  if (!session) {
+    return sendJson(res, 401, { error: 'Unauthorized' })
+  }
+
+  if (!hasEmployeeAccess(session)) {
+    return sendJson(res, 403, { error: 'Employee access is required' })
+  }
+
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET')
+    return sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const url = new URL(req.url, 'http://localhost')
+  const requestId = String(url.searchParams.get('requestId') || '').trim()
+
+  if (!requestId) {
+    return sendJson(res, 400, { error: 'requestId is required' })
+  }
+
+  const feed = await getCrmActivityByRequestId(requestId)
+
+  if (!feed.ticket) {
+    return sendJson(res, 404, { error: 'CRM ticket not found for this request' })
+  }
+
+  return sendJson(res, 200, {
+    ok: true,
+    ticket: feed.ticket,
+    activity: feed.activity,
+  })
+}
+
 async function handleMicrosoftStart(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -556,5 +767,8 @@ module.exports = {
   handleAdminUsers,
   handleMicrosoftCallback,
   handleMicrosoftStart,
+  handleAdminCrm,
+  handleAdminCrmActions,
+  handleAdminCrmActivity,
   handleAdminSubmissions,
 }

@@ -69,6 +69,14 @@ const SubmissionsPage = () => {
   const [selectedAssignee, setSelectedAssignee] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("open");
   const [statusNote, setStatusNote] = useState("");
+  const [crmNoteBody, setCrmNoteBody] = useState("");
+  const [crmTaskTitle, setCrmTaskTitle] = useState("");
+  const [crmTaskDescription, setCrmTaskDescription] = useState("");
+  const [crmTaskDueDate, setCrmTaskDueDate] = useState("");
+  const [isCreatingCrmNote, setIsCreatingCrmNote] = useState(false);
+  const [isCreatingCrmTask, setIsCreatingCrmTask] = useState(false);
+  const [crmActivity, setCrmActivity] = useState([]);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [session, setSession] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
@@ -185,10 +193,44 @@ const SubmissionsPage = () => {
         setSelectedAssignee(payload.ticket?.assignedTo || "");
         setSelectedStatus(payload.ticket?.status || "open");
         setStatus("");
+        await fetchCrmActivity(requestId);
       } catch (error) {
         setStatus(error.message || "Failed to load ticket detail");
       } finally {
         setIsDetailLoading(false);
+      }
+    },
+    [fetchCrmActivity, session?.token],
+  );
+
+  const fetchCrmActivity = useCallback(
+    async (requestId) => {
+      if (!requestId) {
+        setCrmActivity([]);
+        return;
+      }
+
+      setIsActivityLoading(true);
+
+      try {
+        const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+        const response = await fetch(`/api/admin/crm-activity?requestId=${encodeURIComponent(requestId)}`, {
+          headers: authHeader,
+          credentials: "include",
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to load CRM activity");
+        }
+
+        setCrmActivity(payload.activity || []);
+      } catch (error) {
+        setCrmActivity([]);
+        setStatus(error.message || "Failed to load CRM activity");
+      } finally {
+        setIsActivityLoading(false);
       }
     },
     [session?.token],
@@ -360,6 +402,92 @@ const SubmissionsPage = () => {
       setStatus(error.message || "Failed to update status");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleCreateCrmNote = async () => {
+    if (!selectedTicket?.requestId || !crmNoteBody.trim()) {
+      setStatus("Enter a note before saving it to CRM.");
+      return;
+    }
+
+    setIsCreatingCrmNote(true);
+
+    try {
+      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+      const response = await fetch("/api/admin/crm-actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "note",
+          requestId: selectedTicket.requestId,
+          body: crmNoteBody,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to save CRM note");
+      }
+
+      setCrmNoteBody("");
+      setStatus("CRM note saved.");
+      emitToast({ message: "CRM note saved.", type: "success" });
+      await fetchCrmActivity(selectedTicket.requestId);
+    } catch (error) {
+      setStatus(error.message || "Failed to save CRM note");
+    } finally {
+      setIsCreatingCrmNote(false);
+    }
+  };
+
+  const handleCreateCrmTask = async () => {
+    if (!selectedTicket?.requestId || !crmTaskTitle.trim()) {
+      setStatus("Enter a task title before saving it to CRM.");
+      return;
+    }
+
+    setIsCreatingCrmTask(true);
+
+    try {
+      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+      const response = await fetch("/api/admin/crm-actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeader,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "task",
+          requestId: selectedTicket.requestId,
+          title: crmTaskTitle,
+          description: crmTaskDescription,
+          dueDate: crmTaskDueDate,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to save CRM task");
+      }
+
+      setCrmTaskTitle("");
+      setCrmTaskDescription("");
+      setCrmTaskDueDate("");
+      setStatus("CRM task created.");
+      emitToast({ message: "CRM task created.", type: "success" });
+      await fetchCrmActivity(selectedTicket.requestId);
+    } catch (error) {
+      setStatus(error.message || "Failed to save CRM task");
+    } finally {
+      setIsCreatingCrmTask(false);
     }
   };
 
@@ -615,6 +743,74 @@ const SubmissionsPage = () => {
                       <strong>Details</strong>
                       <p>{selectedTicket.message}</p>
                     </div>
+                  </div>
+
+                  <div className="crm-action-panel">
+                    <div className="crm-action-card">
+                      <strong>Save CRM note</strong>
+                      <textarea
+                        className="submissions-input"
+                        rows={4}
+                        value={crmNoteBody}
+                        onChange={(event) => setCrmNoteBody(event.target.value)}
+                        placeholder="Add an internal CRM note from this ticket"
+                      />
+                      <button className="btn ghost-btn" type="button" onClick={handleCreateCrmNote} disabled={isCreatingCrmNote}>
+                        {isCreatingCrmNote ? "Saving..." : "Save note to CRM"}
+                      </button>
+                    </div>
+
+                    <div className="crm-action-card">
+                      <strong>Create CRM task</strong>
+                      <input
+                        className="submissions-input"
+                        type="text"
+                        value={crmTaskTitle}
+                        onChange={(event) => setCrmTaskTitle(event.target.value)}
+                        placeholder="Follow-up task title"
+                      />
+                      <textarea
+                        className="submissions-input"
+                        rows={3}
+                        value={crmTaskDescription}
+                        onChange={(event) => setCrmTaskDescription(event.target.value)}
+                        placeholder="Optional task description"
+                      />
+                      <input
+                        className="submissions-input"
+                        type="date"
+                        value={crmTaskDueDate}
+                        onChange={(event) => setCrmTaskDueDate(event.target.value)}
+                      />
+                      <button className="btn dark-btn" type="button" onClick={handleCreateCrmTask} disabled={isCreatingCrmTask}>
+                        {isCreatingCrmTask ? "Creating..." : "Create CRM task"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="timeline-list">
+                    <h3>CRM activity</h3>
+                    {isActivityLoading ? (
+                      <p className="submissions-meta">Loading CRM activity...</p>
+                    ) : crmActivity.length ? (
+                      crmActivity.map((item) => (
+                        <article key={item.id} className="timeline-item">
+                          <strong>{item.type === "task" ? "Task" : item.type === "note" ? "Note" : "Activity"}</strong>
+                          <span>{formatDate(item.createdAt)}</span>
+                          {item.type === "task" ? (
+                            <p>
+                              {item.title}
+                              {item.body ? ` • ${item.body}` : ""}
+                              {item.dueDate ? ` • Due ${formatDate(item.dueDate)}` : ""}
+                            </p>
+                          ) : (
+                            <p>{item.body || item.title || "CRM record created."}</p>
+                          )}
+                        </article>
+                      ))
+                    ) : (
+                      <p className="submissions-meta">No CRM notes or tasks have been added yet.</p>
+                    )}
                   </div>
 
                   <div className="assignment-row status-row">

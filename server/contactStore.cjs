@@ -58,6 +58,1355 @@ function shouldUsePostgres() {
   return Boolean(getConfiguredPostgresUrl())
 }
 
+function camelToSnake(value) {
+  return String(value || '')
+    .replace(/([A-Z])/g, '_$1')
+    .replace(/^_/, '')
+    .toLowerCase()
+}
+
+function snakeToCamel(value) {
+  return String(value || '').replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase())
+}
+
+function mapCrmRow(row) {
+  if (!row) {
+    return null
+  }
+
+  return Object.fromEntries(
+    Object.entries(row).map(([key, value]) => [snakeToCamel(key), value]),
+  )
+}
+
+function readPayloadValue(payload, key) {
+  if (!payload || typeof payload !== 'object') {
+    return undefined
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, key)) {
+    return payload[key]
+  }
+
+  const snakeKey = camelToSnake(key)
+
+  if (Object.prototype.hasOwnProperty.call(payload, snakeKey)) {
+    return payload[snakeKey]
+  }
+
+  return undefined
+}
+
+const CRM_ENTITY_CONFIG = {
+  organizations: {
+    table: 'crm_organizations',
+    required: ['name'],
+    fields: ['name', 'type', 'status', 'industry', 'website', 'ownerAdminId'],
+    hasUpdatedAt: true,
+  },
+  contacts: {
+    table: 'crm_contacts',
+    required: ['email'],
+    fields: ['organizationId', 'firstName', 'lastName', 'email', 'phone', 'title', 'status', 'ownerAdminId', 'portalUserId'],
+    hasUpdatedAt: true,
+  },
+  leads: {
+    table: 'crm_leads',
+    required: [],
+    fields: ['organizationId', 'contactId', 'sourceSubmissionRequestId', 'source', 'stage', 'priority', 'ownerAdminId'],
+    hasUpdatedAt: true,
+  },
+  opportunities: {
+    table: 'crm_opportunities',
+    required: [],
+    fields: ['leadId', 'organizationId', 'contactId', 'value', 'probability', 'stage', 'expectedCloseDate', 'ownerAdminId'],
+    hasUpdatedAt: true,
+  },
+  tickets: {
+    table: 'crm_tickets',
+    required: ['subject', 'message'],
+    fields: [
+      'organizationId',
+      'contactId',
+      'portalUserId',
+      'contactSubmissionRequestId',
+      'portalTicketRequestId',
+      'subject',
+      'message',
+      'status',
+      'priority',
+      'ownerAdminId',
+    ],
+    hasUpdatedAt: true,
+  },
+  tasks: {
+    table: 'crm_tasks',
+    required: ['title'],
+    fields: ['organizationId', 'contactId', 'leadId', 'opportunityId', 'ticketId', 'title', 'description', 'status', 'priority', 'dueDate', 'assignedAdminId', 'createdByAdminId'],
+    hasUpdatedAt: true,
+  },
+  notes: {
+    table: 'crm_notes',
+    required: ['body'],
+    fields: ['organizationId', 'contactId', 'leadId', 'opportunityId', 'ticketId', 'taskId', 'body', 'visibility', 'createdByAdminId'],
+    hasUpdatedAt: false,
+  },
+  activity_events: {
+    table: 'crm_activity_events',
+    required: ['entityType', 'entityId', 'action'],
+    fields: ['entityType', 'entityId', 'organizationId', 'contactId', 'leadId', 'opportunityId', 'ticketId', 'taskId', 'action', 'payloadJson', 'actorAdminId'],
+    hasUpdatedAt: false,
+  },
+  projects: {
+    table: 'crm_projects',
+    required: ['name'],
+    fields: ['organizationId', 'opportunityId', 'name', 'status', 'startDate', 'endDate', 'ownerAdminId'],
+    hasUpdatedAt: true,
+  },
+  time_entries: {
+    table: 'crm_time_entries',
+    required: ['minutes', 'workDate'],
+    fields: ['projectId', 'taskId', 'loggedByAdminId', 'minutes', 'workDate', 'notes'],
+    hasUpdatedAt: false,
+  },
+  invoices: {
+    table: 'crm_invoices',
+    required: ['invoiceNumber'],
+    fields: ['organizationId', 'projectId', 'invoiceNumber', 'status', 'subtotal', 'tax', 'total', 'dueDate'],
+    hasUpdatedAt: true,
+  },
+  approvals: {
+    table: 'crm_approvals',
+    required: ['entityType', 'entityId'],
+    fields: ['entityType', 'entityId', 'organizationId', 'contactId', 'projectId', 'requestedByAdminId', 'approvedByAdminId', 'status', 'comment'],
+    hasUpdatedAt: true,
+  },
+}
+
+function getCrmEntityConfig(entity) {
+  const normalized = String(entity || '').trim().toLowerCase()
+
+  if (!normalized || !CRM_ENTITY_CONFIG[normalized]) {
+    throw new Error(`Unsupported CRM entity: ${entity}`)
+  }
+
+  return CRM_ENTITY_CONFIG[normalized]
+}
+
+function normalizeCrmPayloadFields(config, payload) {
+  const values = {}
+
+  for (const field of config.fields) {
+    const value = readPayloadValue(payload, field)
+
+    if (value !== undefined) {
+      values[camelToSnake(field)] = value
+    }
+  }
+
+  return values
+}
+
+function validateCrmRequiredFields(config, payload) {
+  for (const field of config.required || []) {
+    const value = readPayloadValue(payload, field)
+
+    if (value === undefined || value === null || String(value).trim() === '') {
+      throw new Error(`${field} is required`)
+    }
+  }
+}
+
+async function listCrmRecords(entity, limit = 100) {
+  const config = getCrmEntityConfig(entity)
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 100, 500))
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `SELECT * FROM ${config.table} ORDER BY created_at DESC LIMIT $1`,
+      [safeLimit],
+    )
+
+    return result.rows.map(mapCrmRow)
+  }
+
+  const db = ensureSqlite()
+  const rows = db.prepare(
+    `SELECT * FROM ${config.table} ORDER BY created_at DESC LIMIT ?`,
+  ).all(safeLimit)
+
+  return rows.map(mapCrmRow)
+}
+
+async function getCrmRecord(entity, id) {
+  const config = getCrmEntityConfig(entity)
+  const normalizedId = Number(id)
+
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `SELECT * FROM ${config.table} WHERE id = $1 LIMIT 1`,
+      [normalizedId],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare(`SELECT * FROM ${config.table} WHERE id = ? LIMIT 1`).get(normalizedId)
+  return mapCrmRow(row || null)
+}
+
+async function createCrmRecord(entity, payload) {
+  const config = getCrmEntityConfig(entity)
+  validateCrmRequiredFields(config, payload)
+  const values = normalizeCrmPayloadFields(config, payload)
+  const columns = Object.keys(values)
+
+  if (!columns.length) {
+    throw new Error('No CRM fields provided')
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const placeholders = columns.map((_, index) => `$${index + 1}`).join(', ')
+    const result = await pool.query(
+      `
+        INSERT INTO ${config.table} (${columns.join(', ')})
+        VALUES (${placeholders})
+        RETURNING *
+      `,
+      columns.map((column) => values[column]),
+    )
+
+    return mapCrmRow(result.rows[0])
+  }
+
+  const db = ensureSqlite()
+  const placeholders = columns.map(() => '?').join(', ')
+  const result = db.prepare(
+    `
+      INSERT INTO ${config.table} (${columns.join(', ')})
+      VALUES (${placeholders})
+    `,
+  ).run(...columns.map((column) => values[column]))
+
+  const row = db.prepare(`SELECT * FROM ${config.table} WHERE id = ? LIMIT 1`).get(result.lastInsertRowid)
+  return mapCrmRow(row || null)
+}
+
+async function updateCrmRecord(entity, id, payload) {
+  const config = getCrmEntityConfig(entity)
+  const normalizedId = Number(id)
+
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    throw new Error('A valid id is required')
+  }
+
+  const values = normalizeCrmPayloadFields(config, payload)
+  const columns = Object.keys(values)
+
+  if (!columns.length && !config.hasUpdatedAt) {
+    throw new Error('No CRM fields provided')
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const params = []
+    const assignments = []
+
+    columns.forEach((column) => {
+      params.push(values[column])
+      assignments.push(`${column} = $${params.length}`)
+    })
+
+    if (config.hasUpdatedAt) {
+      assignments.push(`updated_at = NOW()`)
+    }
+
+    if (!assignments.length) {
+      throw new Error('No CRM fields provided')
+    }
+
+    params.push(normalizedId)
+    const result = await pool.query(
+      `
+        UPDATE ${config.table}
+        SET ${assignments.join(', ')}
+        WHERE id = $${params.length}
+        RETURNING *
+      `,
+      params,
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const assignments = columns.map((column) => `${column} = ?`)
+  const params = columns.map((column) => values[column])
+
+  if (config.hasUpdatedAt) {
+    assignments.push('updated_at = CURRENT_TIMESTAMP')
+  }
+
+  if (!assignments.length) {
+    throw new Error('No CRM fields provided')
+  }
+
+  params.push(normalizedId)
+  db.prepare(
+    `
+      UPDATE ${config.table}
+      SET ${assignments.join(', ')}
+      WHERE id = ?
+    `,
+  ).run(...params)
+
+  const row = db.prepare(`SELECT * FROM ${config.table} WHERE id = ? LIMIT 1`).get(normalizedId)
+  return mapCrmRow(row || null)
+}
+
+async function deleteCrmRecord(entity, id) {
+  const config = getCrmEntityConfig(entity)
+  const normalizedId = Number(id)
+
+  if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+    throw new Error('A valid id is required')
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `DELETE FROM ${config.table} WHERE id = $1 RETURNING id`,
+      [normalizedId],
+    )
+
+    return Boolean(result.rows[0])
+  }
+
+  const db = ensureSqlite()
+  const result = db.prepare(`DELETE FROM ${config.table} WHERE id = ?`).run(normalizedId)
+  return result.changes > 0
+}
+
+async function findCrmOrganizationByName(name) {
+  const normalizedName = String(name || '').trim()
+
+  if (!normalizedName) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT * FROM crm_organizations WHERE LOWER(name) = LOWER($1) LIMIT 1',
+      [normalizedName],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare('SELECT * FROM crm_organizations WHERE LOWER(name) = LOWER(?) LIMIT 1').get(normalizedName)
+  return mapCrmRow(row || null)
+}
+
+async function upsertCrmOrganization({ name, type = 'customer', status = 'active', industry = null, website = null, ownerAdminId = null }) {
+  const normalizedName = String(name || '').trim()
+
+  if (!normalizedName) {
+    return null
+  }
+
+  const existing = await findCrmOrganizationByName(normalizedName)
+
+  if (existing) {
+    return updateCrmRecord('organizations', existing.id, {
+      type,
+      status,
+      industry,
+      website,
+      ownerAdminId,
+    })
+  }
+
+  return createCrmRecord('organizations', {
+    name: normalizedName,
+    type,
+    status,
+    industry,
+    website,
+    ownerAdminId,
+  })
+}
+
+async function findCrmContactByEmail(email) {
+  const normalizedEmail = normalizePortalEmail(email)
+
+  if (!normalizedEmail) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT * FROM crm_contacts WHERE LOWER(email) = LOWER($1) LIMIT 1',
+      [normalizedEmail],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare('SELECT * FROM crm_contacts WHERE LOWER(email) = LOWER(?) LIMIT 1').get(normalizedEmail)
+  return mapCrmRow(row || null)
+}
+
+async function upsertCrmContact({ email, firstName = null, lastName = null, organizationId = null, phone = null, title = null, status = 'active', ownerAdminId = null, portalUserId = null }) {
+  const normalizedEmail = normalizePortalEmail(email)
+
+  if (!normalizedEmail) {
+    return null
+  }
+
+  const existing = await findCrmContactByEmail(normalizedEmail)
+
+  if (existing) {
+    return updateCrmRecord('contacts', existing.id, {
+      organizationId: organizationId ?? existing.organizationId ?? null,
+      firstName,
+      lastName,
+      phone,
+      title,
+      status,
+      ownerAdminId,
+      portalUserId,
+    })
+  }
+
+  return createCrmRecord('contacts', {
+    organizationId,
+    firstName,
+    lastName,
+    email: normalizedEmail,
+    phone,
+    title,
+    status,
+    ownerAdminId,
+    portalUserId,
+  })
+}
+
+async function findCrmLeadBySubmissionRequestId(requestId) {
+  const normalizedRequestId = String(requestId || '').trim()
+
+  if (!normalizedRequestId) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT * FROM crm_leads WHERE source_submission_request_id = $1 LIMIT 1',
+      [normalizedRequestId],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare('SELECT * FROM crm_leads WHERE source_submission_request_id = ? LIMIT 1').get(normalizedRequestId)
+  return mapCrmRow(row || null)
+}
+
+async function upsertCrmLeadFromSubmission(submission, organizationId, contactId, ownerAdminId = null) {
+  const existing = await findCrmLeadBySubmissionRequestId(submission.requestId)
+
+  const payload = {
+    organizationId,
+    contactId,
+    sourceSubmissionRequestId: submission.requestId,
+    source: submission.source || 'contact-form',
+    stage: submission.kind === 'lead' ? 'new' : 'intake',
+    priority: 'normal',
+    ownerAdminId,
+  }
+
+  if (existing) {
+    return updateCrmRecord('leads', existing.id, payload)
+  }
+
+  return createCrmRecord('leads', payload)
+}
+
+async function findCrmTicketBySubmissionRequestId(requestId) {
+  const normalizedRequestId = String(requestId || '').trim()
+
+  if (!normalizedRequestId) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT * FROM crm_tickets WHERE contact_submission_request_id = $1 LIMIT 1',
+      [normalizedRequestId],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare('SELECT * FROM crm_tickets WHERE contact_submission_request_id = ? LIMIT 1').get(normalizedRequestId)
+  return mapCrmRow(row || null)
+}
+
+async function findCrmTicketByPortalRequestId(requestId) {
+  const normalizedRequestId = String(requestId || '').trim()
+
+  if (!normalizedRequestId) {
+    return null
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      'SELECT * FROM crm_tickets WHERE portal_ticket_request_id = $1 LIMIT 1',
+      [normalizedRequestId],
+    )
+
+    return mapCrmRow(result.rows[0] || null)
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare('SELECT * FROM crm_tickets WHERE portal_ticket_request_id = ? LIMIT 1').get(normalizedRequestId)
+  return mapCrmRow(row || null)
+}
+
+async function findCrmTicketByRequestId(requestId) {
+  return (await findCrmTicketByPortalRequestId(requestId)) || (await findCrmTicketBySubmissionRequestId(requestId))
+}
+
+async function getCrmActivityByRequestId(requestId) {
+  const crmTicket = await findCrmTicketByRequestId(requestId)
+
+  if (!crmTicket) {
+    return {
+      ticket: null,
+      activity: [],
+    }
+  }
+
+  const selectActivity = async (dbOrPool, query, params) => {
+    if (shouldUsePostgres()) {
+      const result = await dbOrPool.query(query, params)
+      return result.rows
+    }
+
+    return dbOrPool.prepare(query.replace(/\$[0-9]+/g, '?')).all(...params)
+  }
+
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const [notes, tasks, events] = await Promise.all([
+      selectActivity(pool, `
+        SELECT id, body, visibility, created_by_admin_id, created_at
+        FROM crm_notes
+        WHERE ticket_id = $1
+        ORDER BY created_at DESC
+      `, [crmTicket.id]),
+      selectActivity(pool, `
+        SELECT id, title, description, status, priority, due_date, assigned_admin_id, created_by_admin_id, created_at
+        FROM crm_tasks
+        WHERE ticket_id = $1
+        ORDER BY created_at DESC
+      `, [crmTicket.id]),
+      selectActivity(pool, `
+        SELECT id, action, payload_json, actor_admin_id, created_at
+        FROM crm_activity_events
+        WHERE ticket_id = $1
+        ORDER BY created_at DESC
+      `, [crmTicket.id]),
+    ])
+
+    const activity = [
+      ...notes.map((row) => ({
+        id: `note-${row.id}`,
+        type: 'note',
+        title: 'CRM note',
+        body: row.body,
+        visibility: row.visibility,
+        createdByAdminId: row.created_by_admin_id,
+        createdAt: row.created_at,
+      })),
+      ...tasks.map((row) => ({
+        id: `task-${row.id}`,
+        type: 'task',
+        title: row.title,
+        body: row.description || '',
+        status: row.status,
+        priority: row.priority,
+        dueDate: row.due_date || null,
+        assignedAdminId: row.assigned_admin_id || null,
+        createdByAdminId: row.created_by_admin_id || null,
+        createdAt: row.created_at,
+      })),
+      ...events.map((row) => ({
+        id: `event-${row.id}`,
+        type: 'activity',
+        title: row.action,
+        body: row.payload_json ? JSON.stringify(row.payload_json) : '',
+        createdByAdminId: row.actor_admin_id || null,
+        createdAt: row.created_at,
+      })),
+    ].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+
+    return {
+      ticket: crmTicket,
+      activity,
+    }
+  }
+
+  const db = ensureSqlite()
+  const notes = db.prepare(`
+    SELECT id, body, visibility, created_by_admin_id, created_at
+    FROM crm_notes
+    WHERE ticket_id = ?
+    ORDER BY created_at DESC
+  `).all(crmTicket.id)
+
+  const tasks = db.prepare(`
+    SELECT id, title, description, status, priority, due_date, assigned_admin_id, created_by_admin_id, created_at
+    FROM crm_tasks
+    WHERE ticket_id = ?
+    ORDER BY created_at DESC
+  `).all(crmTicket.id)
+
+  const events = db.prepare(`
+    SELECT id, action, payload_json, actor_admin_id, created_at
+    FROM crm_activity_events
+    WHERE ticket_id = ?
+    ORDER BY created_at DESC
+  `).all(crmTicket.id)
+
+  const activity = [
+    ...notes.map((row) => ({
+      id: `note-${row.id}`,
+      type: 'note',
+      title: 'CRM note',
+      body: row.body,
+      visibility: row.visibility,
+      createdByAdminId: row.created_by_admin_id,
+      createdAt: row.created_at,
+    })),
+    ...tasks.map((row) => ({
+      id: `task-${row.id}`,
+      type: 'task',
+      title: row.title,
+      body: row.description || '',
+      status: row.status,
+      priority: row.priority,
+      dueDate: row.due_date || null,
+      assignedAdminId: row.assigned_admin_id || null,
+      createdByAdminId: row.created_by_admin_id || null,
+      createdAt: row.created_at,
+    })),
+    ...events.map((row) => ({
+      id: `event-${row.id}`,
+      type: 'activity',
+      title: row.action,
+      body: row.payload_json ? row.payload_json : '',
+      createdByAdminId: row.actor_admin_id || null,
+      createdAt: row.created_at,
+    })),
+  ].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+
+  return {
+    ticket: crmTicket,
+    activity,
+  }
+}
+
+async function upsertCrmTicket(payload) {
+  const existing = payload.contactSubmissionRequestId
+    ? await findCrmTicketBySubmissionRequestId(payload.contactSubmissionRequestId)
+    : await findCrmTicketByPortalRequestId(payload.portalTicketRequestId)
+
+  if (existing) {
+    return updateCrmRecord('tickets', existing.id, payload)
+  }
+
+  return createCrmRecord('tickets', payload)
+}
+
+async function createCrmActivityEvent(payload) {
+  return createCrmRecord('activity_events', payload)
+}
+
+async function syncSubmissionToCrm(submission) {
+  const sourceCompany = String(submission.company || '').trim()
+  const sourceName = String(submission.name || '').trim()
+  const [firstName, ...restName] = sourceName.split(/\s+/).filter(Boolean)
+  const lastName = restName.length ? restName.join(' ') : null
+
+  const organization = sourceCompany
+    ? await upsertCrmOrganization({ name: sourceCompany })
+    : null
+
+  const contact = await upsertCrmContact({
+    email: submission.email,
+    firstName: firstName || null,
+    lastName,
+    organizationId: organization?.id || null,
+  })
+
+  const lead = await upsertCrmLeadFromSubmission(submission, organization?.id || null, contact?.id || null)
+
+  const ticket = await upsertCrmTicket({
+    organizationId: organization?.id || null,
+    contactId: contact?.id || null,
+    contactSubmissionRequestId: submission.requestId,
+    subject: submission.kind === 'lead' ? 'Lead inquiry' : 'Contact request',
+    message: [
+      submission.processNeedsImprovement ? `Process: ${submission.processNeedsImprovement}` : null,
+      submission.currentTools ? `Current tools: ${submission.currentTools}` : null,
+      submission.timeline ? `Timeline: ${submission.timeline}` : null,
+      submission.context ? `Context: ${submission.context}` : null,
+    ].filter(Boolean).join(' | ') || 'Submission captured from website contact form.',
+    status: 'received',
+    priority: 'normal',
+  })
+
+  await createCrmActivityEvent({
+    entityType: 'submission',
+    entityId: submission.requestId,
+    organizationId: organization?.id || null,
+    contactId: contact?.id || null,
+    leadId: lead?.id || null,
+    ticketId: ticket?.id || null,
+    action: 'submission_received',
+    payloadJson: JSON.stringify(submission),
+    actorAdminId: null,
+  })
+
+  return {
+    organization,
+    contact,
+    lead,
+    ticket,
+  }
+}
+
+async function syncPortalUserToCrmContact(user) {
+  return upsertCrmContact({
+    email: user.email,
+    firstName: user.displayName || null,
+    organizationId: null,
+    portalUserId: user.id,
+  })
+}
+
+async function syncPortalTicketToCrmTicket({ ticket, portalUser }) {
+  const contact = await syncPortalUserToCrmContact(portalUser)
+
+  const crmTicket = await upsertCrmTicket({
+    organizationId: contact?.organizationId || null,
+    contactId: contact?.id || null,
+    portalUserId: portalUser.id,
+    portalTicketRequestId: ticket.requestId,
+    subject: ticket.subject,
+    message: ticket.message,
+    status: ticket.status,
+    priority: 'normal',
+  })
+
+  await createCrmActivityEvent({
+    entityType: 'ticket',
+    entityId: ticket.requestId,
+    organizationId: contact?.organizationId || null,
+    contactId: contact?.id || null,
+    ticketId: crmTicket?.id || null,
+    action: 'portal_ticket_created',
+    payloadJson: JSON.stringify(ticket),
+    actorAdminId: null,
+  })
+
+  return crmTicket
+}
+
+async function syncCrmTicketStatusByRequestId(requestId, status, updatedBy, note = '') {
+  const crmTicket = (await findCrmTicketByPortalRequestId(requestId)) || (await findCrmTicketBySubmissionRequestId(requestId))
+
+  if (!crmTicket) {
+    return null
+  }
+
+  return updateCrmRecord('tickets', crmTicket.id, {
+    status,
+    ownerAdminId: crmTicket.ownerAdminId || null,
+  })
+}
+
+async function syncCrmTicketAssignmentByRequestId(requestId, assignedTo) {
+  const crmTicket = (await findCrmTicketByPortalRequestId(requestId)) || (await findCrmTicketBySubmissionRequestId(requestId))
+
+  if (!crmTicket) {
+    return null
+  }
+
+  const assignee = assignedTo ? await getAdminUserByUsername(assignedTo) : null
+
+  return updateCrmRecord('tickets', crmTicket.id, {
+    ownerAdminId: assignee?.id || null,
+  })
+}
+
+async function ensureCrmSchemaPostgres(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_organizations (
+      id BIGSERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      type TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      industry TEXT,
+      website TEXT,
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_contacts (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      first_name TEXT,
+      last_name TEXT,
+      email TEXT NOT NULL,
+      phone TEXT,
+      title TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      portal_user_id BIGINT REFERENCES portal_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_organization_id ON crm_contacts (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_owner_admin_id ON crm_contacts (owner_admin_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_portal_user_id ON crm_contacts (portal_user_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_email ON crm_contacts (LOWER(email))`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_leads (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      source_submission_request_id TEXT UNIQUE REFERENCES contact_submissions(request_id) ON DELETE SET NULL,
+      source TEXT,
+      stage TEXT NOT NULL DEFAULT 'new',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_leads_organization_id ON crm_leads (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_leads_contact_id ON crm_leads (contact_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_leads_owner_admin_id ON crm_leads (owner_admin_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_opportunities (
+      id BIGSERIAL PRIMARY KEY,
+      lead_id BIGINT UNIQUE REFERENCES crm_leads(id) ON DELETE SET NULL,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      value NUMERIC(12, 2),
+      probability INTEGER,
+      stage TEXT NOT NULL DEFAULT 'qualification',
+      expected_close_date DATE,
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_organization_id ON crm_opportunities (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_contact_id ON crm_opportunities (contact_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_owner_admin_id ON crm_opportunities (owner_admin_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_tickets (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      portal_user_id BIGINT REFERENCES portal_users(id) ON DELETE SET NULL,
+      contact_submission_request_id TEXT UNIQUE REFERENCES contact_submissions(request_id) ON DELETE SET NULL,
+      portal_ticket_request_id TEXT UNIQUE REFERENCES portal_tickets(request_id) ON DELETE SET NULL,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_organization_id ON crm_tickets (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_contact_id ON crm_tickets (contact_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_owner_admin_id ON crm_tickets (owner_admin_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_portal_user_id ON crm_tickets (portal_user_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_tasks (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      lead_id BIGINT REFERENCES crm_leads(id) ON DELETE SET NULL,
+      opportunity_id BIGINT REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      ticket_id BIGINT REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      due_date DATE,
+      assigned_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_by_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_organization_id ON crm_tasks (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_contact_id ON crm_tasks (contact_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_lead_id ON crm_tasks (lead_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_opportunity_id ON crm_tasks (opportunity_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_ticket_id ON crm_tasks (ticket_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_assigned_admin_id ON crm_tasks (assigned_admin_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_notes (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      lead_id BIGINT REFERENCES crm_leads(id) ON DELETE SET NULL,
+      opportunity_id BIGINT REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      ticket_id BIGINT REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      task_id BIGINT REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      body TEXT NOT NULL,
+      visibility TEXT NOT NULL DEFAULT 'internal',
+      created_by_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_notes_organization_id ON crm_notes (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_notes_contact_id ON crm_notes (contact_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_notes_ticket_id ON crm_notes (ticket_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_notes_task_id ON crm_notes (task_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_activity_events (
+      id BIGSERIAL PRIMARY KEY,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      lead_id BIGINT REFERENCES crm_leads(id) ON DELETE SET NULL,
+      opportunity_id BIGINT REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      ticket_id BIGINT REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      task_id BIGINT REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      action TEXT NOT NULL,
+      payload_json JSONB,
+      actor_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_entity ON crm_activity_events (entity_type, entity_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_organization_id ON crm_activity_events (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_contact_id ON crm_activity_events (contact_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_projects (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      opportunity_id BIGINT UNIQUE REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'planned',
+      start_date DATE,
+      end_date DATE,
+      owner_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_projects_organization_id ON crm_projects (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_projects_owner_admin_id ON crm_projects (owner_admin_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_time_entries (
+      id BIGSERIAL PRIMARY KEY,
+      project_id BIGINT REFERENCES crm_projects(id) ON DELETE SET NULL,
+      task_id BIGINT REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      logged_by_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      minutes INTEGER NOT NULL DEFAULT 0,
+      work_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_time_entries_project_id ON crm_time_entries (project_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_time_entries_task_id ON crm_time_entries (task_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_invoices (
+      id BIGSERIAL PRIMARY KEY,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      project_id BIGINT REFERENCES crm_projects(id) ON DELETE SET NULL,
+      invoice_number TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'draft',
+      subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      tax NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      total NUMERIC(12, 2) NOT NULL DEFAULT 0,
+      due_date DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_invoices_organization_id ON crm_invoices (organization_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_invoices_project_id ON crm_invoices (project_id)`)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS crm_approvals (
+      id BIGSERIAL PRIMARY KEY,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      organization_id BIGINT REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      contact_id BIGINT REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      project_id BIGINT REFERENCES crm_projects(id) ON DELETE SET NULL,
+      requested_by_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      approved_by_admin_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      comment TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_approvals_entity ON crm_approvals (entity_type, entity_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_crm_approvals_organization_id ON crm_approvals (organization_id)`)
+}
+
+function ensureCrmSchemaSqlite(db) {
+  db.exec('PRAGMA foreign_keys = ON')
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_organizations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      type TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      industry TEXT,
+      website TEXT,
+      owner_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_contacts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      first_name TEXT,
+      last_name TEXT,
+      email TEXT NOT NULL,
+      phone TEXT,
+      title TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      owner_admin_id INTEGER,
+      portal_user_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL,
+      FOREIGN KEY (portal_user_id) REFERENCES portal_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_organization_id ON crm_contacts (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_owner_admin_id ON crm_contacts (owner_admin_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_portal_user_id ON crm_contacts (portal_user_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_email ON crm_contacts (email)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_leads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      source_submission_request_id TEXT UNIQUE,
+      source TEXT,
+      stage TEXT NOT NULL DEFAULT 'new',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      owner_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (source_submission_request_id) REFERENCES contact_submissions(request_id) ON DELETE SET NULL,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_leads_organization_id ON crm_leads (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_leads_contact_id ON crm_leads (contact_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_leads_owner_admin_id ON crm_leads (owner_admin_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_opportunities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER UNIQUE,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      value NUMERIC,
+      probability INTEGER,
+      stage TEXT NOT NULL DEFAULT 'qualification',
+      expected_close_date TEXT,
+      owner_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_organization_id ON crm_opportunities (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_contact_id ON crm_opportunities (contact_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_opportunities_owner_admin_id ON crm_opportunities (owner_admin_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      portal_user_id INTEGER,
+      contact_submission_request_id TEXT UNIQUE,
+      portal_ticket_request_id TEXT UNIQUE,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      owner_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (portal_user_id) REFERENCES portal_users(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_submission_request_id) REFERENCES contact_submissions(request_id) ON DELETE SET NULL,
+      FOREIGN KEY (portal_ticket_request_id) REFERENCES portal_tickets(request_id) ON DELETE SET NULL,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_organization_id ON crm_tickets (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_contact_id ON crm_tickets (contact_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_owner_admin_id ON crm_tickets (owner_admin_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tickets_portal_user_id ON crm_tickets (portal_user_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      lead_id INTEGER,
+      opportunity_id INTEGER,
+      ticket_id INTEGER,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'open',
+      priority TEXT NOT NULL DEFAULT 'normal',
+      due_date TEXT,
+      assigned_admin_id INTEGER,
+      created_by_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL,
+      FOREIGN KEY (opportunity_id) REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      FOREIGN KEY (ticket_id) REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      FOREIGN KEY (assigned_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL,
+      FOREIGN KEY (created_by_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_organization_id ON crm_tasks (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_contact_id ON crm_tasks (contact_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_lead_id ON crm_tasks (lead_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_opportunity_id ON crm_tasks (opportunity_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_ticket_id ON crm_tasks (ticket_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_tasks_assigned_admin_id ON crm_tasks (assigned_admin_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      lead_id INTEGER,
+      opportunity_id INTEGER,
+      ticket_id INTEGER,
+      task_id INTEGER,
+      body TEXT NOT NULL,
+      visibility TEXT NOT NULL DEFAULT 'internal',
+      created_by_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL,
+      FOREIGN KEY (opportunity_id) REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      FOREIGN KEY (ticket_id) REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      FOREIGN KEY (task_id) REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      FOREIGN KEY (created_by_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_notes_organization_id ON crm_notes (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_notes_contact_id ON crm_notes (contact_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_notes_ticket_id ON crm_notes (ticket_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_notes_task_id ON crm_notes (task_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_activity_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      lead_id INTEGER,
+      opportunity_id INTEGER,
+      ticket_id INTEGER,
+      task_id INTEGER,
+      action TEXT NOT NULL,
+      payload_json TEXT,
+      actor_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (lead_id) REFERENCES crm_leads(id) ON DELETE SET NULL,
+      FOREIGN KEY (opportunity_id) REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      FOREIGN KEY (ticket_id) REFERENCES crm_tickets(id) ON DELETE SET NULL,
+      FOREIGN KEY (task_id) REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      FOREIGN KEY (actor_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_entity ON crm_activity_events (entity_type, entity_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_organization_id ON crm_activity_events (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_activity_events_contact_id ON crm_activity_events (contact_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      opportunity_id INTEGER UNIQUE,
+      name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'planned',
+      start_date TEXT,
+      end_date TEXT,
+      owner_admin_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (opportunity_id) REFERENCES crm_opportunities(id) ON DELETE SET NULL,
+      FOREIGN KEY (owner_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_projects_organization_id ON crm_projects (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_projects_owner_admin_id ON crm_projects (owner_admin_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_time_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER,
+      task_id INTEGER,
+      logged_by_admin_id INTEGER,
+      minutes INTEGER NOT NULL DEFAULT 0,
+      work_date TEXT NOT NULL DEFAULT CURRENT_DATE,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES crm_projects(id) ON DELETE SET NULL,
+      FOREIGN KEY (task_id) REFERENCES crm_tasks(id) ON DELETE SET NULL,
+      FOREIGN KEY (logged_by_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_time_entries_project_id ON crm_time_entries (project_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_time_entries_task_id ON crm_time_entries (task_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      project_id INTEGER,
+      invoice_number TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'draft',
+      subtotal NUMERIC NOT NULL DEFAULT 0,
+      tax NUMERIC NOT NULL DEFAULT 0,
+      total NUMERIC NOT NULL DEFAULT 0,
+      due_date TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (project_id) REFERENCES crm_projects(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_invoices_organization_id ON crm_invoices (organization_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_invoices_project_id ON crm_invoices (project_id)`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS crm_approvals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      organization_id INTEGER,
+      contact_id INTEGER,
+      project_id INTEGER,
+      requested_by_admin_id INTEGER,
+      approved_by_admin_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'pending',
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (organization_id) REFERENCES crm_organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL,
+      FOREIGN KEY (project_id) REFERENCES crm_projects(id) ON DELETE SET NULL,
+      FOREIGN KEY (requested_by_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL,
+      FOREIGN KEY (approved_by_admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+    )
+  `)
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_approvals_entity ON crm_approvals (entity_type, entity_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_approvals_organization_id ON crm_approvals (organization_id)`)
+}
+
 function buildPasswordHash(password) {
   const salt = crypto.randomBytes(16).toString('hex')
   const hash = crypto.scryptSync(password, salt, 64).toString('hex')
@@ -175,6 +1524,8 @@ async function ensurePostgres() {
     )
   `)
 
+  await ensureCrmSchemaPostgres(postgresPool)
+
   postgresReady = true
   return postgresPool
 }
@@ -265,6 +1616,8 @@ function ensureSqlite() {
       assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  ensureCrmSchemaSqlite(sqliteDb)
 
   sqliteReady = true
   return sqliteDb
@@ -364,11 +1717,15 @@ function insertSqlite(record) {
 async function storeSubmission(payload, requestId) {
   const record = normalizeSubmission(payload, requestId)
 
-  if (shouldUsePostgres()) {
-    return insertPostgres(record)
-  }
+  const result = shouldUsePostgres()
+    ? await insertPostgres(record)
+    : insertSqlite(record)
 
-  return insertSqlite(record)
+  syncSubmissionToCrm(record).catch((error) => {
+    console.error('[crm-sync] failed to sync contact submission', error)
+  })
+
+  return result
 }
 
 async function getStorageStatus() {
@@ -692,6 +2049,14 @@ async function createPortalUser({ email, password, displayName }) {
       throw error
     }
 
+    syncPortalUserToCrmContact({
+      id: result.rows[0].id,
+      email: result.rows[0].email,
+      displayName: result.rows[0].display_name,
+    }).catch((error) => {
+      console.error('[crm-sync] failed to sync portal user', error)
+    })
+
     return {
       id: result.rows[0].id,
       email: result.rows[0].email,
@@ -719,6 +2084,14 @@ async function createPortalUser({ email, password, displayName }) {
   const user = db
     .prepare('SELECT id, email, display_name, created_at FROM portal_users WHERE email = ?')
     .get(normalizedEmail)
+
+  syncPortalUserToCrmContact({
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+  }).catch((error) => {
+    console.error('[crm-sync] failed to sync portal user', error)
+  })
 
   return {
     id: user.id,
@@ -896,6 +2269,13 @@ async function createPortalTicket({ requestId, email, subject, message }) {
       note: 'Ticket created by client.',
       actor: 'client',
     })
+    const portalUser = await getPortalUserByEmail(normalizedEmail)
+    syncPortalTicketToCrmTicket({
+      ticket,
+      portalUser: portalUser || { id: null, email: normalizedEmail, displayName: null },
+    }).catch((error) => {
+      console.error('[crm-sync] failed to sync portal ticket', error)
+    })
     return ticket
   }
 
@@ -918,6 +2298,13 @@ async function createPortalTicket({ requestId, email, subject, message }) {
     status: ticket.status,
     note: 'Ticket created by client.',
     actor: 'client',
+  })
+  const portalUser = await getPortalUserByEmail(normalizedEmail)
+  syncPortalTicketToCrmTicket({
+    ticket,
+    portalUser: portalUser || { id: null, email: normalizedEmail, displayName: null },
+  }).catch((error) => {
+    console.error('[crm-sync] failed to sync portal ticket', error)
   })
   return ticket
 }
@@ -1298,6 +2685,11 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
         : `Ticket unassigned by ${normalizedAssignedBy}.`,
       actor: normalizedAssignedBy,
     })
+
+    syncCrmTicketAssignmentByRequestId(normalizedRequestId, null).catch((error) => {
+      console.error('[crm-sync] failed to sync ticket assignment', error)
+    })
+
     return {
       requestId: normalizedRequestId,
       assignedTo: null,
@@ -1326,6 +2718,10 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
         ? `Assigned to ${normalizedAssignedTo} by ${normalizedAssignedBy}. Previous owner: ${previousAssignee}.`
         : `Assigned to ${normalizedAssignedTo} by ${normalizedAssignedBy}.`,
       actor: normalizedAssignedBy,
+    })
+
+    syncCrmTicketAssignmentByRequestId(normalizedRequestId, normalizedAssignedTo).catch((error) => {
+      console.error('[crm-sync] failed to sync ticket assignment', error)
     })
 
   const row = db.prepare(
@@ -1395,6 +2791,10 @@ async function updateAdminTicketStatus(requestId, status, updatedBy, note = '') 
     status: normalizedStatus,
     note: normalizedNote || `Status updated to ${normalizedStatus}.`,
     actor: normalizedUpdatedBy,
+  })
+
+  syncCrmTicketStatusByRequestId(normalizedRequestId, normalizedStatus, normalizedUpdatedBy, normalizedNote).catch((error) => {
+    console.error('[crm-sync] failed to sync ticket status', error)
   })
 
   return {
@@ -1696,18 +3096,25 @@ async function getPortalTicketsByEmail(email, limit = 100) {
 module.exports = {
   assignAdminTicket,
   createOrUpdateAdminUser,
+  createCrmRecord,
   createPortalTicket,
   createPortalUser,
+  deleteCrmRecord,
+  getCrmActivityByRequestId,
   getAdminTicketDetail,
   getAdminTickets,
   getAdminUserByUsername,
+  getCrmRecord,
+  findCrmTicketByRequestId,
   getPortalTicketDetailByEmail,
   getPortalTicketsByEmail,
   getPortalUserByEmail,
   getStorageStatus,
   getRecentSubmissions,
   listAdminUsers,
+  listCrmRecords,
   storeSubmission,
+  updateCrmRecord,
   updateAdminTicketStatus,
   verifyAdminCredentials,
   verifyPortalCredentials,

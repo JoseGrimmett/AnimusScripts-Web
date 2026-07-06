@@ -1,0 +1,234 @@
+.crm-main {
+  padding-top: 7.8rem;
+  padding-bottom: 3.5rem;
+}
+
+.crm-hero {
+  padding: 1.4rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.crm-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0.65rem 0 0.9rem;
+}
+
+.crm-hero p {
+  color: rgba(248, 250, 252, 0.78);
+  line-height: 1.7;
+}
+
+.crm-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.crm-summary-card {
+  text-align: left;
+  padding: 0.95rem 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(5, 12, 24, 0.52);
+  color: #f8fafc;
+}
+
+.crm-summary-card.active {
+  border-color: rgba(159, 184, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(159, 184, 255, 0.15) inset;
+}
+
+.crm-summary-card span {
+  display: block;
+  color: rgba(248, 250, 252, 0.68);
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.crm-summary-card strong {
+  font-size: 1.5rem;
+}
+
+.crm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.crm-meta,
+.crm-status {
+  margin-top: 0.85rem;
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.crm-tabs {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding: 0.8rem;
+}
+
+.crm-tab {
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.crm-tab.active {
+  background: rgba(159, 184, 255, 0.16);
+  border-color: rgba(159, 184, 255, 0.4);
+  color: #f8fafc;
+}
+
+.crm-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1rem;
+}
+
+.crm-list-shell,
+.crm-detail-shell {
+  padding: 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.crm-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.crm-section-head h2 {
+  font-size: 1.2rem;
+}
+
+.crm-section-head p {
+  color: rgba(248, 250, 252, 0.68);
+  margin-top: 0.35rem;
+}
+
+.crm-count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(159, 184, 255, 0.12);
+  color: #cbd8ff;
+  white-space: nowrap;
+}
+
+.crm-table-wrap {
+  overflow: auto;
+}
+
+.crm-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.crm-table th,
+.crm-table td {
+  padding: 0.72rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.crm-table th {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crm-table tbody tr {
+  cursor: pointer;
+}
+
+.crm-table tbody tr.active {
+  background: rgba(159, 184, 255, 0.12);
+}
+
+.crm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.crm-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.crm-field.full {
+  grid-column: 1 / -1;
+}
+
+.crm-field span {
+  color: rgba(248, 250, 252, 0.72);
+  font-size: 0.9rem;
+}
+
+.crm-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 15, 28, 0.8);
+  color: #f8fafc;
+}
+
+.crm-input::placeholder {
+  color: rgba(248, 250, 252, 0.42);
+}
+
+.crm-actions-bottom {
+  margin-top: 1rem;
+}
+
+.crm-detail-meta {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 12, 24, 0.5);
+}
+
+.crm-detail-meta strong {
+  color: #f8fafc;
+}
+
+.crm-detail-meta span {
+  color: rgba(248, 250, 252, 0.7);
+}
+
+@media (max-width: 980px) {
+  .crm-summary,
+  .crm-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .crm-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

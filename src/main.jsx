@@ -10,6 +10,7 @@ import WhatWeBuildPage from './Pages/WhatWeBuildPage.jsx';
 import AboutPage from './Pages/AboutPage.jsx';
 import ContactPage from './Pages/ContactPage.jsx';
 import SubmissionsPage from './Pages/SubmissionsPage.jsx';
+import AdminCrmPage from './Pages/AdminCrmPage.jsx';
 import PortalPage from './Pages/PortalPage.jsx';
 import EmployeeRouteGuard from './Components/RouteGuards/EmployeeRouteGuard.jsx';
 import ToastHost from './Components/ToastHost/ToastHost.jsx';
@@ -29,6 +30,14 @@ createRoot(document.getElementById('root')).render(
           element={(
             <EmployeeRouteGuard>
               <SubmissionsPage />
+            </EmployeeRouteGuard>
+          )}
+        />
+        <Route
+          path="/admin/crm"
+          element={(
+            <EmployeeRouteGuard>
+              <AdminCrmPage />
             </EmployeeRouteGuard>
           )}
         />
