@@ -62,26 +62,23 @@ export default defineConfig(({ mode }) => {
             await submissionsHandler(req, res)
           })
 
-          let adminLoginHandlerPromise
+          let adminAuthHandlerPromise
           let adminSubmissionsHandlerPromise
-          let adminSessionHandlerPromise
-          let adminLogoutHandlerPromise
           let adminTicketsHandlerPromise
           let adminUsersHandlerPromise
-          let adminMicrosoftStartHandlerPromise
-          let adminMicrosoftCallbackHandlerPromise
+          let adminMicrosoftHandlerPromise
           let portalSignupHandlerPromise
           let portalLoginHandlerPromise
           let portalSessionHandlerPromise
           let portalLogoutHandlerPromise
           let portalTicketsHandlerPromise
 
-          const getAdminLoginHandler = async () => {
-            if (!adminLoginHandlerPromise) {
-              adminLoginHandlerPromise = import('./api/admin/login.js').then((module) => module.default ?? module)
+          const getAdminAuthHandler = async () => {
+            if (!adminAuthHandlerPromise) {
+              adminAuthHandlerPromise = import('./api/admin/auth.js').then((module) => module.default ?? module)
             }
 
-            return adminLoginHandlerPromise
+            return adminAuthHandlerPromise
           }
 
           const getAdminSubmissionsHandler = async () => {
@@ -90,22 +87,6 @@ export default defineConfig(({ mode }) => {
             }
 
             return adminSubmissionsHandlerPromise
-          }
-
-          const getAdminSessionHandler = async () => {
-            if (!adminSessionHandlerPromise) {
-              adminSessionHandlerPromise = import('./api/admin/session.js').then((module) => module.default ?? module)
-            }
-
-            return adminSessionHandlerPromise
-          }
-
-          const getAdminLogoutHandler = async () => {
-            if (!adminLogoutHandlerPromise) {
-              adminLogoutHandlerPromise = import('./api/admin/logout.js').then((module) => module.default ?? module)
-            }
-
-            return adminLogoutHandlerPromise
           }
 
           const getAdminTicketsHandler = async () => {
@@ -124,20 +105,12 @@ export default defineConfig(({ mode }) => {
             return adminUsersHandlerPromise
           }
 
-          const getAdminMicrosoftStartHandler = async () => {
-            if (!adminMicrosoftStartHandlerPromise) {
-              adminMicrosoftStartHandlerPromise = import('./api/admin/microsoft/start.js').then((module) => module.default ?? module)
+          const getAdminMicrosoftHandler = async () => {
+            if (!adminMicrosoftHandlerPromise) {
+              adminMicrosoftHandlerPromise = import('./api/admin/microsoft.js').then((module) => module.default ?? module)
             }
 
-            return adminMicrosoftStartHandlerPromise
-          }
-
-          const getAdminMicrosoftCallbackHandler = async () => {
-            if (!adminMicrosoftCallbackHandlerPromise) {
-              adminMicrosoftCallbackHandlerPromise = import('./api/admin/microsoft/callback.js').then((module) => module.default ?? module)
-            }
-
-            return adminMicrosoftCallbackHandlerPromise
+            return adminMicrosoftHandlerPromise
           }
 
           const getPortalSignupHandler = async () => {
@@ -183,25 +156,33 @@ export default defineConfig(({ mode }) => {
           server.middlewares.use('/api/admin/login', async (req, res) => {
             if (req.method === 'POST') {
               req.body = await readRequestBody(req)
+              req.url = '/api/admin/auth?action=login'
             }
 
-            const adminLoginHandler = await getAdminLoginHandler()
-            await adminLoginHandler(req, res)
+            const adminAuthHandler = await getAdminAuthHandler()
+            await adminAuthHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/session', async (req, res) => {
+            req.url = '/api/admin/auth?action=session'
+
+            const adminAuthHandler = await getAdminAuthHandler()
+            await adminAuthHandler(req, res)
+          })
+
+          server.middlewares.use('/api/admin/logout', async (req, res) => {
+            if (req.method === 'POST') {
+              req.body = { action: 'logout' }
+              req.url = '/api/admin/auth?action=logout'
+            }
+
+            const adminAuthHandler = await getAdminAuthHandler()
+            await adminAuthHandler(req, res)
           })
 
           server.middlewares.use('/api/admin/submissions', async (req, res) => {
             const adminSubmissionsHandler = await getAdminSubmissionsHandler()
             await adminSubmissionsHandler(req, res)
-          })
-
-          server.middlewares.use('/api/admin/session', async (req, res) => {
-            const adminSessionHandler = await getAdminSessionHandler()
-            await adminSessionHandler(req, res)
-          })
-
-          server.middlewares.use('/api/admin/logout', async (req, res) => {
-            const adminLogoutHandler = await getAdminLogoutHandler()
-            await adminLogoutHandler(req, res)
           })
 
           server.middlewares.use('/api/admin/tickets', async (req, res) => {
@@ -223,13 +204,17 @@ export default defineConfig(({ mode }) => {
           })
 
           server.middlewares.use('/api/admin/microsoft/start', async (req, res) => {
-            const adminMicrosoftStartHandler = await getAdminMicrosoftStartHandler()
-            await adminMicrosoftStartHandler(req, res)
+            req.url = '/api/admin/microsoft?action=start'
+
+            const adminMicrosoftHandler = await getAdminMicrosoftHandler()
+            await adminMicrosoftHandler(req, res)
           })
 
           server.middlewares.use('/api/admin/microsoft/callback', async (req, res) => {
-            const adminMicrosoftCallbackHandler = await getAdminMicrosoftCallbackHandler()
-            await adminMicrosoftCallbackHandler(req, res)
+            req.url = '/api/admin/microsoft?action=callback'
+
+            const adminMicrosoftHandler = await getAdminMicrosoftHandler()
+            await adminMicrosoftHandler(req, res)
           })
 
           server.middlewares.use('/api/portal/signup', async (req, res) => {

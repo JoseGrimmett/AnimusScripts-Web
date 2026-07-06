@@ -12,6 +12,26 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/api/admin/login",
+      "destination": "/api/admin/auth"
+    },
+    {
+      "source": "/api/admin/session",
+      "destination": "/api/admin/auth"
+    },
+    {
+      "source": "/api/admin/logout",
+      "destination": "/api/admin/auth"
+    },
+    {
+      "source": "/api/admin/microsoft/start",
+      "destination": "/api/admin/microsoft"
+    },
+    {
+      "source": "/api/admin/microsoft/callback",
+      "destination": "/api/admin/microsoft"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
