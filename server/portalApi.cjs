@@ -331,6 +331,19 @@ async function handlePortalLogout(req, res) {
   })
 }
 
+async function handlePortalLogout(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    return sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  clearPortalCookie(res)
+
+  return sendJson(res, 200, {
+    ok: true,
+  })
+}
+
 async function handlePortalTickets(req, res) {
   const session = getPortalSession(req)
 
