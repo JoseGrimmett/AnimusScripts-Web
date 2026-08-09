@@ -6,8 +6,23 @@ require('dotenv').config({
   override: true,
 })
 
-const { handleAdminCrm } = require('../../server/adminApi.cjs')
+const {
+  handleAdminCrm,
+  handleAdminCrmActions,
+  handleAdminCrmActivity,
+} = require('../../server/adminApi.cjs')
 
 export default async function handler(req, res) {
+  const url = new URL(req.url || '/api/admin/crm', 'http://localhost')
+  const mode = String(url.searchParams.get('mode') || '').trim().toLowerCase()
+
+  if (mode === 'actions') {
+    return handleAdminCrmActions(req, res)
+  }
+
+  if (mode === 'activity') {
+    return handleAdminCrmActivity(req, res)
+  }
+
   return handleAdminCrm(req, res)
 }

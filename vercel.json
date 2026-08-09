@@ -24,12 +24,24 @@
       "destination": "/api/admin/auth"
     },
     {
+      "source": "/api/admin/crm-actions",
+      "destination": "/api/admin/crm?mode=actions"
+    },
+    {
+      "source": "/api/admin/crm-activity",
+      "destination": "/api/admin/crm?mode=activity"
+    },
+    {
       "source": "/api/admin/microsoft/start",
       "destination": "/api/admin/microsoft"
     },
     {
       "source": "/api/admin/microsoft/callback",
       "destination": "/api/admin/microsoft"
+    },
+    {
+      "source": "/api/portal/logout",
+      "destination": "/api/portal/session?mode=logout"
     },
     {
       "source": "/(.*)",

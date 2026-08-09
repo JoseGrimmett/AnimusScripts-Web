@@ -70,7 +70,6 @@ export default defineConfig(({ mode }) => {
           let portalSignupHandlerPromise
           let portalLoginHandlerPromise
           let portalSessionHandlerPromise
-          let portalLogoutHandlerPromise
           let portalTicketsHandlerPromise
 
           const getAdminAuthHandler = async () => {
@@ -135,14 +134,6 @@ export default defineConfig(({ mode }) => {
             }
 
             return portalSessionHandlerPromise
-          }
-
-          const getPortalLogoutHandler = async () => {
-            if (!portalLogoutHandlerPromise) {
-              portalLogoutHandlerPromise = import('./api/portal/logout.js').then((module) => module.default ?? module)
-            }
-
-            return portalLogoutHandlerPromise
           }
 
           const getPortalTicketsHandler = async () => {
@@ -241,8 +232,10 @@ export default defineConfig(({ mode }) => {
           })
 
           server.middlewares.use('/api/portal/logout', async (req, res) => {
-            const portalLogoutHandler = await getPortalLogoutHandler()
-            await portalLogoutHandler(req, res)
+            req.url = '/api/portal/session?mode=logout'
+
+            const portalSessionHandler = await getPortalSessionHandler()
+            await portalSessionHandler(req, res)
           })
 
           server.middlewares.use('/api/portal/tickets', async (req, res) => {
