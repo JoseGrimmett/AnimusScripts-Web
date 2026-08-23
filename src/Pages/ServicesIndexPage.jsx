@@ -1,16 +1,11 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import NavBar from "../Components/NavBar/NavBar";
 import Footer from "../Components/Footer/Footer";
 import { serviceCatalog } from "../data/siteContent";
-import { trackPageView } from "../utils/analytics";
 import "./ServicesIndexPage.css";
 
 const ServicesIndexPage = () => {
-  useEffect(() => {
-    trackPageView(window.location.pathname, "Animus Scripts - Services");
-  }, []);
-
   return (
     <div className="site-shell">
       <NavBar />

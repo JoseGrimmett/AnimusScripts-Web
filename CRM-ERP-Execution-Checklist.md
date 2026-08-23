@@ -2,6 +2,16 @@
 
 This is the practical build order for moving from the current site into a working CRM first, then into ERP.
 
+## Implementation status — August 22, 2026
+
+- Shared CRM and ERP-extension tables are implemented for Postgres and SQLite.
+- New contact submissions, portal users, and portal tickets are synchronized into CRM with awaited writes.
+- An idempotent CRM backfill command and automated synchronization tests are implemented.
+- Production backfill was applied successfully: 2 submissions, 4 portal users, and 4 portal tickets now map to CRM records.
+- Production integrity checks found 0 orphaned relationships, 0 duplicate source mappings, and 0 duplicate activity events.
+- Disposable-database integration coverage now verifies portal tenant isolation, staff ticket processing, CRM status/ownership synchronization, customer timeline visibility, and admin-only user creation.
+- Staff workflow validation, analytics, permissions/audit hardening, search/reporting, and production end-to-end testing remain open.
+
 ## Stage 0: Lock the scope
 
 - Define the first CRM users.
@@ -17,14 +27,14 @@ This is the practical build order for moving from the current site into a workin
 
 ## Stage 1: Create the shared schema
 
-- Add organizations.
-- Add contacts.
-- Add users.
-- Add tickets or requests.
-- Add tasks.
-- Add notes.
-- Add activity events.
-- Add ownership and status fields.
+- [x] Add organizations.
+- [x] Add contacts.
+- [x] Add users.
+- [x] Add tickets or requests.
+- [x] Add tasks.
+- [x] Add notes.
+- [x] Add activity events.
+- [x] Add ownership and status fields.
 
 ### Output
 
@@ -34,10 +44,12 @@ This is the practical build order for moving from the current site into a workin
 
 ## Stage 2: Route intake into CRM records
 
-- Map the public contact form to a CRM contact or lead.
-- Map portal signup to a customer account.
-- Map portal ticket creation to a support ticket.
-- Save the source page, form, and timestamps.
+- [x] Map the public contact form to a CRM contact or lead.
+- [x] Map portal signup to a customer account.
+- [x] Map portal ticket creation to a support ticket.
+- [x] Save the source page, form, and timestamps.
+- [x] Apply and verify the production backfill.
+- [ ] Complete a production end-to-end test of the full intake workflow.
 
 ### Output
 
@@ -88,10 +100,11 @@ This is the practical build order for moving from the current site into a workin
 
 ## Stage 6: Connect the portal to the same records
 
-- Let customers see ticket status.
-- Let customers view timelines.
-- Let customers create or update requests.
-- Keep portal access restricted to the owning account.
+- [x] Let customers see ticket status.
+- [x] Let customers view timelines.
+- [x] Let customers create requests.
+- [ ] Let customers update existing requests or add replies.
+- [x] Keep portal access restricted to the owning account.
 
 ### Output
 
@@ -100,10 +113,11 @@ This is the practical build order for moving from the current site into a workin
 
 ## Stage 7: Add permissions and auditability
 
-- Separate staff and customer access.
+- [x] Separate staff and customer access.
 - Record login events.
 - Record updates to sensitive fields.
-- Restrict who can change ownership, billing, or status fields.
+- [x] Restrict staff-user creation to administrators.
+- [ ] Restrict who can change ownership, billing, or status fields with granular roles.
 
 ### Output
 

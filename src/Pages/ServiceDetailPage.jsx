@@ -4,7 +4,6 @@ import { animate, stagger } from "animejs";
 import NavBar from "../Components/NavBar/NavBar";
 import Footer from "../Components/Footer/Footer";
 import { serviceCatalog } from "../data/siteContent";
-import { trackPageView } from "../utils/analytics";
 import useAnimeReveal from "../hooks/useAnimeReveal";
 import "./ServiceDetailPage.css";
 
@@ -16,12 +15,6 @@ const ServiceDetailPage = () => {
   const heroTitleRef = useRef(null);
   const heroCopyRef = useRef(null);
   const layoutRef = useRef(null);
-
-  useEffect(() => {
-    if (service) {
-      trackPageView(window.location.pathname, `Animus Scripts - ${service.title}`);
-    }
-  }, [service]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

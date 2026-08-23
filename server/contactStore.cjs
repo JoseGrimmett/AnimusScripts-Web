@@ -749,6 +749,49 @@ async function createCrmActivityEvent(payload) {
   return createCrmRecord('activity_events', payload)
 }
 
+async function findCrmActivityEvent(entityType, entityId, action) {
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `
+        SELECT *
+        FROM crm_activity_events
+        WHERE entity_type = $1 AND entity_id = $2 AND action = $3
+        ORDER BY created_at ASC
+        LIMIT 1
+      `,
+      [entityType, entityId, action],
+    )
+    return result.rows[0] ? mapCrmRow(result.rows[0]) : null
+  }
+
+  const db = ensureSqlite()
+  const row = db.prepare(
+    `
+      SELECT *
+      FROM crm_activity_events
+      WHERE entity_type = ? AND entity_id = ? AND action = ?
+      ORDER BY created_at ASC
+      LIMIT 1
+    `,
+  ).get(entityType, entityId, action)
+  return row ? mapCrmRow(row) : null
+}
+
+async function ensureCrmActivityEvent(payload) {
+  const existing = await findCrmActivityEvent(payload.entityType, payload.entityId, payload.action)
+  return existing || createCrmActivityEvent(payload)
+}
+
+async function runCrmSyncSafely(label, callback) {
+  try {
+    return await callback()
+  } catch (error) {
+    console.error(`[crm-sync] failed to sync ${label}`, error)
+    return null
+  }
+}
+
 async function syncSubmissionToCrm(submission) {
   const sourceCompany = String(submission.company || '').trim()
   const sourceName = String(submission.name || '').trim()
@@ -783,7 +826,7 @@ async function syncSubmissionToCrm(submission) {
     priority: 'normal',
   })
 
-  await createCrmActivityEvent({
+  await ensureCrmActivityEvent({
     entityType: 'submission',
     entityId: submission.requestId,
     organizationId: organization?.id || null,
@@ -826,7 +869,7 @@ async function syncPortalTicketToCrmTicket({ ticket, portalUser }) {
     priority: 'normal',
   })
 
-  await createCrmActivityEvent({
+  await ensureCrmActivityEvent({
     entityType: 'ticket',
     entityId: ticket.requestId,
     organizationId: contact?.organizationId || null,
@@ -1441,7 +1484,7 @@ async function ensurePostgres() {
       connectionString,
       max: 3,
       idleTimeoutMillis: 10000,
-      ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false,
+      ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: true } : false,
     })
   }
 
@@ -1721,9 +1764,11 @@ async function storeSubmission(payload, requestId) {
     ? await insertPostgres(record)
     : insertSqlite(record)
 
-  syncSubmissionToCrm(record).catch((error) => {
+  try {
+    await syncSubmissionToCrm(record)
+  } catch (error) {
     console.error('[crm-sync] failed to sync contact submission', error)
-  })
+  }
 
   return result
 }
@@ -2049,13 +2094,11 @@ async function createPortalUser({ email, password, displayName }) {
       throw error
     }
 
-    syncPortalUserToCrmContact({
+    await runCrmSyncSafely('portal user', () => syncPortalUserToCrmContact({
       id: result.rows[0].id,
       email: result.rows[0].email,
       displayName: result.rows[0].display_name,
-    }).catch((error) => {
-      console.error('[crm-sync] failed to sync portal user', error)
-    })
+    }))
 
     return {
       id: result.rows[0].id,
@@ -2085,13 +2128,11 @@ async function createPortalUser({ email, password, displayName }) {
     .prepare('SELECT id, email, display_name, created_at FROM portal_users WHERE email = ?')
     .get(normalizedEmail)
 
-  syncPortalUserToCrmContact({
+  await runCrmSyncSafely('portal user', () => syncPortalUserToCrmContact({
     id: user.id,
     email: user.email,
     displayName: user.display_name,
-  }).catch((error) => {
-    console.error('[crm-sync] failed to sync portal user', error)
-  })
+  }))
 
   return {
     id: user.id,
@@ -2270,12 +2311,10 @@ async function createPortalTicket({ requestId, email, subject, message }) {
       actor: 'client',
     })
     const portalUser = await getPortalUserByEmail(normalizedEmail)
-    syncPortalTicketToCrmTicket({
+    await runCrmSyncSafely('portal ticket', () => syncPortalTicketToCrmTicket({
       ticket,
       portalUser: portalUser || { id: null, email: normalizedEmail, displayName: null },
-    }).catch((error) => {
-      console.error('[crm-sync] failed to sync portal ticket', error)
-    })
+    }))
     return ticket
   }
 
@@ -2300,12 +2339,10 @@ async function createPortalTicket({ requestId, email, subject, message }) {
     actor: 'client',
   })
   const portalUser = await getPortalUserByEmail(normalizedEmail)
-  syncPortalTicketToCrmTicket({
+  await runCrmSyncSafely('portal ticket', () => syncPortalTicketToCrmTicket({
     ticket,
     portalUser: portalUser || { id: null, email: normalizedEmail, displayName: null },
-  }).catch((error) => {
-    console.error('[crm-sync] failed to sync portal ticket', error)
-  })
+  }))
   return ticket
 }
 
@@ -2630,6 +2667,7 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
           : `Ticket unassigned by ${normalizedAssignedBy}.`,
         actor: normalizedAssignedBy,
       })
+      await runCrmSyncSafely('ticket assignment', () => syncCrmTicketAssignmentByRequestId(normalizedRequestId, null))
       return {
         requestId: normalizedRequestId,
         assignedTo: null,
@@ -2661,6 +2699,7 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
         : `Assigned to ${normalizedAssignedTo} by ${normalizedAssignedBy}.`,
       actor: normalizedAssignedBy,
     })
+    await runCrmSyncSafely('ticket assignment', () => syncCrmTicketAssignmentByRequestId(normalizedRequestId, normalizedAssignedTo))
 
     return {
       requestId: result.rows[0].request_id,
@@ -2686,9 +2725,7 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
       actor: normalizedAssignedBy,
     })
 
-    syncCrmTicketAssignmentByRequestId(normalizedRequestId, null).catch((error) => {
-      console.error('[crm-sync] failed to sync ticket assignment', error)
-    })
+    await runCrmSyncSafely('ticket assignment', () => syncCrmTicketAssignmentByRequestId(normalizedRequestId, null))
 
     return {
       requestId: normalizedRequestId,
@@ -2720,9 +2757,7 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
       actor: normalizedAssignedBy,
     })
 
-    syncCrmTicketAssignmentByRequestId(normalizedRequestId, normalizedAssignedTo).catch((error) => {
-      console.error('[crm-sync] failed to sync ticket assignment', error)
-    })
+  await runCrmSyncSafely('ticket assignment', () => syncCrmTicketAssignmentByRequestId(normalizedRequestId, normalizedAssignedTo))
 
   const row = db.prepare(
     'SELECT request_id, assigned_to, assigned_by, assigned_at FROM ticket_assignments WHERE request_id = ?',
@@ -2739,7 +2774,7 @@ async function assignAdminTicket(requestId, assignedTo, assignedBy) {
 function normalizeTicketStatus(status) {
   const value = String(status || '').trim().toLowerCase()
 
-  if (value === 'in-progress') {
+  if (value === 'in-progress' || value === 'in_progress') {
     return 'in-progress'
   }
 
@@ -2793,9 +2828,9 @@ async function updateAdminTicketStatus(requestId, status, updatedBy, note = '') 
     actor: normalizedUpdatedBy,
   })
 
-  syncCrmTicketStatusByRequestId(normalizedRequestId, normalizedStatus, normalizedUpdatedBy, normalizedNote).catch((error) => {
-    console.error('[crm-sync] failed to sync ticket status', error)
-  })
+  await runCrmSyncSafely('ticket status', () => (
+    syncCrmTicketStatusByRequestId(normalizedRequestId, normalizedStatus, normalizedUpdatedBy, normalizedNote)
+  ))
 
   return {
     requestId: normalizedRequestId,
@@ -3093,8 +3128,99 @@ async function getPortalTicketsByEmail(email, limit = 100) {
     .slice(0, safeLimit)
 }
 
+async function getCrmBackfillSources() {
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const [submissionResult, userResult, ticketResult] = await Promise.all([
+      pool.query('SELECT * FROM contact_submissions ORDER BY created_at ASC'),
+      pool.query('SELECT id, email, display_name, created_at FROM portal_users ORDER BY created_at ASC'),
+      pool.query('SELECT id, request_id, user_email, subject, message, status, source, created_at FROM portal_tickets ORDER BY created_at ASC'),
+    ])
+    return {
+      submissions: submissionResult.rows.map(mapRow),
+      portalUsers: userResult.rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        displayName: row.display_name,
+        createdAt: row.created_at,
+      })),
+      portalTickets: ticketResult.rows.map((row) => ({
+        ...mapTicketRow(row),
+        userEmail: row.user_email,
+      })),
+    }
+  }
+
+  const db = ensureSqlite()
+  return {
+    submissions: db.prepare('SELECT * FROM contact_submissions ORDER BY created_at ASC').all().map(mapRow),
+    portalUsers: db.prepare('SELECT id, email, display_name, created_at FROM portal_users ORDER BY created_at ASC').all().map((row) => ({
+      id: row.id,
+      email: row.email,
+      displayName: row.display_name,
+      createdAt: row.created_at,
+    })),
+    portalTickets: db.prepare('SELECT id, request_id, user_email, subject, message, status, source, created_at FROM portal_tickets ORDER BY created_at ASC').all().map((row) => ({
+      ...mapTicketRow(row),
+      userEmail: row.user_email,
+    })),
+  }
+}
+
+async function backfillCrm({ apply = false } = {}) {
+  const sources = await getCrmBackfillSources()
+  const summary = {
+    mode: apply ? 'apply' : 'dry-run',
+    submissions: sources.submissions.length,
+    portalUsers: sources.portalUsers.length,
+    portalTickets: sources.portalTickets.length,
+    synced: { submissions: 0, portalUsers: 0, portalTickets: 0 },
+    failures: [],
+  }
+
+  if (!apply) {
+    return summary
+  }
+
+  for (const user of sources.portalUsers) {
+    try {
+      await syncPortalUserToCrmContact(user)
+      summary.synced.portalUsers += 1
+    } catch (error) {
+      summary.failures.push({ type: 'portalUser', id: user.id, error: error.message })
+    }
+  }
+
+  for (const submission of sources.submissions) {
+    try {
+      await syncSubmissionToCrm(submission)
+      summary.synced.submissions += 1
+    } catch (error) {
+      summary.failures.push({ type: 'submission', id: submission.requestId, error: error.message })
+    }
+  }
+
+  const usersByEmail = new Map(sources.portalUsers.map((user) => [normalizePortalEmail(user.email), user]))
+  for (const ticket of sources.portalTickets) {
+    try {
+      const portalUser = usersByEmail.get(normalizePortalEmail(ticket.userEmail)) || {
+        id: null,
+        email: ticket.userEmail,
+        displayName: null,
+      }
+      await syncPortalTicketToCrmTicket({ ticket, portalUser })
+      summary.synced.portalTickets += 1
+    } catch (error) {
+      summary.failures.push({ type: 'portalTicket', id: ticket.requestId, error: error.message })
+    }
+  }
+
+  return summary
+}
+
 module.exports = {
   assignAdminTicket,
+  backfillCrm,
   createOrUpdateAdminUser,
   createCrmRecord,
   createPortalTicket,

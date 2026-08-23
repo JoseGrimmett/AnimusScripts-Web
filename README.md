@@ -14,11 +14,11 @@ The site is positioned as an operational software, automation, and business inte
 - optional Microsoft 365 (Office) admin sign-in
 - a client portal at `/portal` for user sign up/sign in and ticket tracking
 
-The app lives in the nested `AnimusScripts-Web/` folder, while the workspace root also contains deployment and API files used by Vercel.
+The Git repository and Vercel project live in the nested `AnimusScripts-Web/` folder. A second API tree currently exists at the surrounding workspace root, but it is not part of this Git repository and should not be treated as the deployment source.
 
 ## Local Development
 
-Run from the workspace root:
+Run from the `AnimusScripts-Web/` repository directory:
 
 ```bash
 npm run dev
@@ -29,9 +29,20 @@ Other useful commands:
 ```bash
 npm run lint
 npm run build
-npm --prefix AnimusScripts-Web run verify:db
-npm --prefix AnimusScripts-Web run admin:create -- --username admin --password "StrongPassword123!"
+npm test
+npm run verify:db
+npm run crm:backfill
+npm run admin:create -- --username admin --password "StrongPassword123!"
 ```
+
+`crm:backfill` is a read-only dry run by default. After reviewing its summary, use
+`npm run crm:backfill -- --apply` to synchronize existing
+submissions, portal users, and portal tickets into CRM. The operation is idempotent.
+The initial production backfill was completed on August 22, 2026.
+
+The test suite uses disposable SQLite databases and covers CRM synchronization, repeatable
+backfills, portal customer isolation, staff status/assignment updates, customer-visible timelines,
+and administrator-only user creation.
 
 ## Routing
 
@@ -59,6 +70,7 @@ Submission flow:
 1. Contact and lead forms post to `/api/contact`
 2. The API stores submissions in `contact_submissions`
 3. Email notification is optional and uses Resend when configured
+4. The stored submission is synchronized into CRM before the API request completes
 
 Storage behavior:
 
@@ -143,6 +155,13 @@ Optional notification settings:
 - `RESEND_FROM_EMAIL`
 - `CONTACT_TO_EMAIL=info@animusscripts.com`
 
+Optional usage analytics:
+
+- `VITE_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX`
+
+Analytics is initialized once at the router root. Page views are recorded for every client-side
+route, and successful contact captures emit `contact_form_success`.
+
 Optional internal access control for the submissions page:
 
 - `ADMIN_AUTH_SECRET`
@@ -195,7 +214,7 @@ Expected result:
 
 Redeploy after setting the environment variables in Vercel.
 
-The root-level `vercel.json` provides SPA rewrites so direct routes like `/submissions` resolve correctly in production.
+The repository-level `vercel.json` provides SPA rewrites so direct routes like `/submissions` resolve correctly in production.
 
 ## Submission Schema
 

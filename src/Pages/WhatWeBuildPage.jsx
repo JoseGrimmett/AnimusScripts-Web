@@ -1,16 +1,11 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import NavBar from "../Components/NavBar/NavBar";
 import Footer from "../Components/Footer/Footer";
 import { projectSystems } from "../data/siteContent";
-import { trackPageView } from "../utils/analytics";
 import "./WhatWeBuildPage.css";
 
 const WhatWeBuildPage = () => {
-  useEffect(() => {
-    trackPageView(window.location.pathname, "Animus Scripts - What We Build");
-  }, []);
-
   return (
     <div className="site-shell">
       <NavBar />

@@ -1,15 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import NavBar from "../Components/NavBar/NavBar";
 import Footer from "../Components/Footer/Footer";
 import Contact from "../Components/Contact/Contact";
-import { trackPageView } from "../utils/analytics";
 import "./ContactPage.css";
 
 const ContactPage = () => {
-  useEffect(() => {
-    trackPageView(window.location.pathname, "Animus Scripts - Contact");
-  }, []);
-
   return (
     <div className="site-shell">
       <NavBar />

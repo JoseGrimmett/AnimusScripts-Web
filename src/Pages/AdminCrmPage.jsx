@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import NavBar from "../Components/NavBar/NavBar";
-import Footer from "../Components/Footer/Footer";
+import AdminShell from "../Components/AdminShell/AdminShell";
 import { emitToast } from "../utils/uiEvents";
 import "./AdminCrmPage.css";
 
@@ -161,6 +160,7 @@ const AdminCrmPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [query, setQuery] = useState("");
 
   const fetchSession = useCallback(async () => {
     const response = await fetch("/api/admin/session", { credentials: "include" });
@@ -221,6 +221,7 @@ const AdminCrmPage = () => {
   useEffect(() => {
     setSelectedRecord(null);
     setDraft(blankDraft(entity));
+    setQuery("");
     loadRecords(entity, null);
   }, [entity, loadRecords]);
 
@@ -231,6 +232,14 @@ const AdminCrmPage = () => {
       count: key === entity ? records.length : null,
     }));
   }, [entity, records.length]);
+
+  const visibleRecords = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return records;
+    return records.filter((record) => Object.values(record).some((value) => (
+      formatValue(value).toLowerCase().includes(normalizedQuery)
+    )));
+  }, [query, records]);
 
   const handleSelectRecord = async (record) => {
     setSelectedRecord(record);
@@ -297,6 +306,10 @@ const AdminCrmPage = () => {
       return;
     }
 
+    if (!window.confirm(`Delete this ${ENTITY_CONFIG[entity].label.slice(0, -1).toLowerCase()} record? This cannot be undone.`)) {
+      return;
+    }
+
     setIsDeleting(true);
 
     try {
@@ -338,8 +351,7 @@ const AdminCrmPage = () => {
   const currentConfig = ENTITY_CONFIG[entity];
 
   return (
-    <div className="site-shell">
-      <NavBar />
+    <AdminShell user={session?.user}>
       <main className="container crm-main">
         <section className="crm-hero card-raise">
           <p className="section-kicker">Internal CRM</p>
@@ -357,7 +369,7 @@ const AdminCrmPage = () => {
                 onClick={() => setEntity(item.key)}
               >
                 <span>{item.label}</span>
-                <strong>{item.count ?? records.length}</strong>
+                <strong>{item.count ?? "—"}</strong>
               </button>
             ))}
           </div>
@@ -381,7 +393,7 @@ const AdminCrmPage = () => {
           ) : null}
         </section>
 
-        {status ? <p className="crm-status">{status}</p> : null}
+        {status ? <p className="crm-status" role="status" aria-live="polite">{status}</p> : null}
 
         <section className="crm-tabs card-raise" aria-label="CRM entity tabs">
           {ENTITY_ORDER.map((item) => (
@@ -406,6 +418,18 @@ const AdminCrmPage = () => {
               <span className="crm-count-pill">{records.length} records</span>
             </div>
 
+            <label className="crm-search">
+              <span className="sr-only">Search {currentConfig.label.toLowerCase()}</span>
+              <input
+                className="crm-input"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={`Search ${currentConfig.label.toLowerCase()}...`}
+              />
+              <small>{visibleRecords.length} of {records.length}</small>
+            </label>
+
             <div className="crm-table-wrap">
               <table className="crm-table">
                 <thead>
@@ -417,11 +441,16 @@ const AdminCrmPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((record) => (
+                  {visibleRecords.map((record) => (
                     <tr
                       key={record.id}
                       className={selectedRecord?.id === record.id ? "active" : ""}
                       onClick={() => handleSelectRecord(record)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") handleSelectRecord(record);
+                      }}
+                      tabIndex={0}
+                      aria-selected={selectedRecord?.id === record.id}
                     >
                       <td>{record.id}</td>
                       {currentConfig.columns.map((column) => (
@@ -496,8 +525,7 @@ const AdminCrmPage = () => {
           </section>
         </div>
       </main>
-      <Footer />
-    </div>
+    </AdminShell>
   );
 };
 

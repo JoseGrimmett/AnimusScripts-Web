@@ -1,5 +1,5 @@
 .submissions-main {
-  padding-top: 7.8rem;
+  padding-top: 2rem;
   padding-bottom: 3.5rem;
 }
 
@@ -97,7 +97,8 @@
   padding: 1.2rem;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  background: #111b2b;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.16);
 }
 
 .ticket-table-wrap {
@@ -283,6 +284,8 @@
 }
 
 @media (max-width: 640px) {
+  .submissions-main { padding-top: 1rem; }
+  .submissions-hero h1 { font-size: 1.8rem; }
   .submissions-unlock-row {
     grid-template-columns: 1fr;
   }

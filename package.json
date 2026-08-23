@@ -7,8 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test test/*.test.cjs",
     "preview": "vite preview",
     "verify:db": "node ./server/verifyContactStore.cjs",
+    "crm:backfill": "node ./server/backfillCrm.cjs",
     "admin:create": "node ./server/createAdminUser.cjs"
   },
   "dependencies": {

@@ -12,7 +12,6 @@ import {
   technologyStack,
 } from "./data/siteContent";
 import useAnimeReveal from "./hooks/useAnimeReveal";
-import { initAnalytics, trackPageView } from "./utils/analytics";
 import "./App.css";
 
 const App = () => {
@@ -26,11 +25,6 @@ const App = () => {
   const projectsSectionRef = useRef(null);
   const processSectionRef = useRef(null);
   const technologySectionRef = useRef(null);
-
-  useEffect(() => {
-    initAnalytics();
-    trackPageView(window.location.pathname, "Animus Scripts - Home");
-  }, []);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

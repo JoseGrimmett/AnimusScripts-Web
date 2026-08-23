@@ -14,10 +14,12 @@ import AdminCrmPage from './Pages/AdminCrmPage.jsx';
 import PortalPage from './Pages/PortalPage.jsx';
 import EmployeeRouteGuard from './Components/RouteGuards/EmployeeRouteGuard.jsx';
 import ToastHost from './Components/ToastHost/ToastHost.jsx';
+import AnalyticsRouteTracker from './Components/AnalyticsRouteTracker/AnalyticsRouteTracker.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+      <AnalyticsRouteTracker />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/services" element={<ServicesIndexPage />} />

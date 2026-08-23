@@ -224,7 +224,7 @@ async function handlePortalSignup(req, res) {
     }
 
     setPortalCookie(res, token)
-  clearAuthAttempts(rateKey)
+    clearAuthAttempts(rateKey)
 
     return sendJson(res, 200, {
       ok: true,
@@ -315,19 +315,6 @@ async function handlePortalSession(req, res) {
       displayName: session.displayName,
     },
     expiresAt: session.expiresAt,
-  })
-}
-
-async function handlePortalLogout(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
-    return sendJson(res, 405, { error: 'Method not allowed' })
-  }
-
-  clearPortalCookie(res)
-
-  return sendJson(res, 200, {
-    ok: true,
   })
 }
 

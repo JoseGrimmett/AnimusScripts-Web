@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import NavBar from "../Components/NavBar/NavBar";
-import Footer from "../Components/Footer/Footer";
+import AdminShell from "../Components/AdminShell/AdminShell";
 import "./SubmissionsPage.css";
 import { AUTH_CHANGED_EVENT, emitAuthChanged, emitToast } from "../utils/uiEvents";
 
@@ -594,8 +593,7 @@ const SubmissionsPage = () => {
   }, [selectedTicket?.timeline]);
 
   return (
-    <div className="site-shell">
-      <NavBar />
+    <AdminShell user={session?.user}>
       <main className="container submissions-main">
         <section className="submissions-hero">
           <p className="section-kicker">Internal Admin</p>
@@ -943,8 +941,7 @@ const SubmissionsPage = () => {
           </section>
         ) : null}
       </main>
-      <Footer />
-    </div>
+    </AdminShell>
   );
 };
 

@@ -47,9 +47,6 @@ const Contact = ({
     setIsSubmitting(true);
     setStatus({ type: "idle", message: "Sending..." });
 
-    // Track form submission
-    trackCTAClick("contact_form_submit", "contact_section");
-
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -79,6 +76,7 @@ const Contact = ({
       if (payload?.durable === false) {
         console.warn("[contact-form] submission captured without durable production storage");
       }
+      trackCTAClick("contact_form_success", "contact_section");
       setStatus({
         type: "success",
         message: "Thanks for reaching out. Your message has been captured.",
