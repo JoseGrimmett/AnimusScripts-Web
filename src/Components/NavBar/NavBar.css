@@ -90,9 +90,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: rgba(122, 162, 255, 0.12);
-  border: 1px solid rgba(122, 162, 255, 0.42);
-  color: #eaf2ff;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(38, 103, 151, 0.34);
+  color: #173a55;
   border-radius: 999px;
   padding: 0.28rem 0.72rem;
   cursor: pointer;
@@ -149,9 +149,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(122, 162, 255, 0.12);
-  border: 1px solid rgba(122, 162, 255, 0.42);
-  color: #eaf2ff;
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(38, 103, 151, 0.34);
+  color: #173a55;
   border-radius: 999px;
   padding: 0.28rem 0.56rem;
   cursor: pointer;

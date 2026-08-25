@@ -313,6 +313,10 @@ const SubmissionsPage = () => {
         throw new Error(payload?.error || "Login failed");
       }
 
+      await fetch("/api/portal/logout", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
       const nextSession = {
         token: payload.token,
         user: payload.user,

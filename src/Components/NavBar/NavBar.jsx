@@ -215,7 +215,7 @@ const NavBar = () => {
               Contact
             </NavLink>
           </li>
-          {(!hasAdminSession || !hasPortalSession) && !isAuthLoading ? (
+          {!hasAnySession && !isAuthLoading ? (
             <li className="auth-nav-item nav-login nav-login-mobile">
               <button type="button" className="login-trigger" onClick={toggleLoginMenu} aria-expanded={loginMenuOpen}>
                 Login
@@ -273,7 +273,7 @@ const NavBar = () => {
               )}
             </div>
           ) : null}
-          {(!hasAdminSession || !hasPortalSession) && !isAuthLoading ? (
+          {!hasAnySession && !isAuthLoading ? (
             <div className="nav-login nav-login-desktop">
               <button type="button" className="login-trigger" onClick={toggleLoginMenu} aria-expanded={loginMenuOpen}>
                 Login

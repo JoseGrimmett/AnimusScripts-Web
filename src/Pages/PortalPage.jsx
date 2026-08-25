@@ -177,6 +177,11 @@ const PortalPage = () => {
         throw new Error(payload?.error || "Authentication failed");
       }
 
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
+      localStorage.removeItem("animusAdminSession");
       setUser(payload.user);
       setAuthForm((prev) => ({
         ...prev,
