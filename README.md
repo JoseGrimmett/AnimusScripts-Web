@@ -96,8 +96,10 @@ Admin credentials are stored in the `admin_users` table with salted + hashed pas
 Create or update an admin account with:
 
 ```bash
-npm --prefix AnimusScripts-Web run admin:create -- --username admin --password "StrongPassword123!"
+npm --prefix AnimusScripts-Web run admin:create -- --username admin --password "StrongPassword123!" --role admin
 ```
+
+Use `--role employee` for staff accounts that should not manage other users. Existing accounts are updated when the same username is supplied again.
 
 Session tokens are signed with `ADMIN_AUTH_SECRET` (falls back to `ADMIN_SUBMISSIONS_KEY` if needed).
 

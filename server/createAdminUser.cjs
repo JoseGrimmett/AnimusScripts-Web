@@ -18,17 +18,24 @@ function readArg(flag) {
 async function main() {
   const username = readArg('--username')
   const password = readArg('--password')
+  const role = String(readArg('--role') || 'employee').trim().toLowerCase()
 
   if (!username || !password) {
-    console.error('Usage: npm run admin:create -- --username <name> --password <password>')
+    console.error('Usage: npm run admin:create -- --username <name> --password <password> [--role employee|admin]')
+    process.exitCode = 1
+    return
+  }
+
+  if (!['employee', 'admin'].includes(role)) {
+    console.error('Role must be either "employee" or "admin".')
     process.exitCode = 1
     return
   }
 
   try {
-    const user = await createOrUpdateAdminUser(username, password)
+    const user = await createOrUpdateAdminUser(username, password, role)
     console.log('Admin user saved:')
-    console.log(JSON.stringify({ id: user.id, username: user.username, createdAt: user.createdAt }, null, 2))
+    console.log(JSON.stringify({ id: user.id, username: user.username, role: user.role, createdAt: user.createdAt }, null, 2))
   } catch (error) {
     console.error('Failed to create admin user.')
     console.error(error)
