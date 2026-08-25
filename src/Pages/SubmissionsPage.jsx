@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminShell from "../Components/AdminShell/AdminShell";
 import "./SubmissionsPage.css";
 import { AUTH_CHANGED_EVENT, emitAuthChanged, emitToast } from "../utils/uiEvents";
@@ -13,6 +14,30 @@ const formatDate = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
+
+const formatRelativeDate = (value) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown time";
+  }
+
+  const elapsedMinutes = Math.round((Date.now() - date.getTime()) / 60000);
+
+  if (elapsedMinutes < 1) return "Just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+  if (elapsedMinutes < 1440) return `${Math.round(elapsedMinutes / 60)}h ago`;
+  if (elapsedMinutes < 10080) return `${Math.round(elapsedMinutes / 1440)}d ago`;
+
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
+
+const humanize = (value) => String(value || "open")
+  .replaceAll("_", " ")
+  .replaceAll("-", " ")
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const normalizeStatus = (value) => String(value || "open").toLowerCase().replaceAll("_", "-");
 
 const csvEscape = (value) => {
   const text = value == null ? "" : String(value);
@@ -54,12 +79,14 @@ const SubmissionsPage = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [users, setUsers] = useState([]);
   const [status, setStatus] = useState("Sign in to access the employee workspace.");
+  const [isSessionChecking, setIsSessionChecking] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     username: "",
     password: "",
@@ -76,13 +103,10 @@ const SubmissionsPage = () => {
   const [isCreatingCrmTask, setIsCreatingCrmTask] = useState(false);
   const [crmActivity, setCrmActivity] = useState([]);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
-  const [session, setSession] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
-    } catch {
-      return null;
-    }
-  });
+  const [session, setSession] = useState(null);
+  const [ticketQuery, setTicketQuery] = useState("");
+  const [ticketStatusFilter, setTicketStatusFilter] = useState("all");
+  const [ticketOwnershipFilter, setTicketOwnershipFilter] = useState("all");
 
   const clearSession = useCallback(() => {
     localStorage.removeItem(ADMIN_SESSION_KEY);
@@ -167,6 +191,39 @@ const SubmissionsPage = () => {
     }
   }, [clearSession, fetchSession, session?.token, session?.user]);
 
+  const fetchCrmActivity = useCallback(
+    async (requestId) => {
+      if (!requestId) {
+        setCrmActivity([]);
+        return;
+      }
+
+      setIsActivityLoading(true);
+
+      try {
+        const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+        const response = await fetch(`/api/admin/crm-activity?requestId=${encodeURIComponent(requestId)}`, {
+          headers: authHeader,
+          credentials: "include",
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to load CRM activity");
+        }
+
+        setCrmActivity(payload.activity || []);
+      } catch (error) {
+        setCrmActivity([]);
+        setStatus(error.message || "Failed to load CRM activity");
+      } finally {
+        setIsActivityLoading(false);
+      }
+    },
+    [session?.token],
+  );
+
   const fetchTicketDetail = useCallback(
     async (requestId) => {
       if (!requestId) {
@@ -200,39 +257,6 @@ const SubmissionsPage = () => {
       }
     },
     [fetchCrmActivity, session?.token],
-  );
-
-  const fetchCrmActivity = useCallback(
-    async (requestId) => {
-      if (!requestId) {
-        setCrmActivity([]);
-        return;
-      }
-
-      setIsActivityLoading(true);
-
-      try {
-        const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
-        const response = await fetch(`/api/admin/crm-activity?requestId=${encodeURIComponent(requestId)}`, {
-          headers: authHeader,
-          credentials: "include",
-        });
-
-        const payload = await response.json();
-
-        if (!response.ok) {
-          throw new Error(payload?.error || "Failed to load CRM activity");
-        }
-
-        setCrmActivity(payload.activity || []);
-      } catch (error) {
-        setCrmActivity([]);
-        setStatus(error.message || "Failed to load CRM activity");
-      } finally {
-        setIsActivityLoading(false);
-      }
-    },
-    [session?.token],
   );
 
   const fetchUsers = useCallback(async () => {
@@ -294,7 +318,6 @@ const SubmissionsPage = () => {
         user: payload.user,
       };
 
-      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
       setPassword("");
       setStatus("Signed in. Loading workspace...");
@@ -517,19 +540,34 @@ const SubmissionsPage = () => {
 
   useEffect(() => {
     if (session?.token || session?.user) {
+      setIsSessionChecking(false);
       fetchTickets();
       fetchUsers();
       return;
     }
 
+    let isActive = true;
+    setIsSessionChecking(true);
+
     fetchSession().then((activeSession) => {
-      if (activeSession) {
-        setSession(activeSession);
+      if (!isActive) {
         return;
       }
 
+      if (activeSession) {
+        setSession(activeSession);
+        setIsSessionChecking(false);
+        return;
+      }
+
+      localStorage.removeItem(ADMIN_SESSION_KEY);
       setTickets([]);
+      setIsSessionChecking(false);
     });
+
+    return () => {
+      isActive = false;
+    };
   }, [fetchSession, fetchTickets, fetchUsers, session?.token, session?.user]);
 
   useEffect(() => {
@@ -557,6 +595,38 @@ const SubmissionsPage = () => {
     return tickets[0].createdAt;
   }, [tickets]);
 
+  const ticketMetrics = useMemo(() => {
+    return tickets.reduce((summary, ticket) => {
+      const ticketStatus = normalizeStatus(ticket.status);
+      summary.total += 1;
+      if (ticketStatus === "received" || ticketStatus === "open") summary.new += 1;
+      if (ticketStatus !== "resolved") summary.active += 1;
+      if (!ticket.assignedTo) summary.unassigned += 1;
+      return summary;
+    }, { total: 0, new: 0, active: 0, unassigned: 0 });
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    const normalizedQuery = ticketQuery.trim().toLowerCase();
+
+    return tickets.filter((ticket) => {
+      const ticketStatus = normalizeStatus(ticket.status);
+      const matchesQuery = !normalizedQuery || [
+        ticket.requestId,
+        ticket.subject,
+        ticket.message,
+        ticket.source,
+        ticket.assignedTo,
+      ].some((value) => String(value || "").toLowerCase().includes(normalizedQuery));
+      const matchesStatus = ticketStatusFilter === "all" || ticketStatus === ticketStatusFilter;
+      const matchesOwnership = ticketOwnershipFilter === "all"
+        || (ticketOwnershipFilter === "unassigned" && !ticket.assignedTo)
+        || (ticketOwnershipFilter === "mine" && ticket.assignedTo === session?.user?.username);
+
+      return matchesQuery && matchesStatus && matchesOwnership;
+    });
+  }, [session?.user?.username, ticketOwnershipFilter, ticketQuery, ticketStatusFilter, tickets]);
+
   const handleExport = () => {
     if (!tickets.length) {
       return;
@@ -575,341 +645,349 @@ const SubmissionsPage = () => {
     return (selectedTicket?.timeline || []).filter((event) => String(event.type || "").includes("assignment"));
   }, [selectedTicket?.timeline]);
 
+  if (isSessionChecking) {
+    return (
+      <div className="employee-login-page employee-session-loading" role="status" aria-live="polite">
+        <div className="employee-session-loading-card">
+          <span className="employee-session-loading-mark" aria-hidden="true">AS</span>
+          <strong>Checking employee access</strong>
+          <p>Connecting to the secure workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <div className="employee-login-page">
+        <header className="employee-login-header">
+          <Link className="employee-login-brand" to="/">
+            <span aria-hidden="true">AS</span>
+            <div>
+              <strong>Animus Operations</strong>
+              <small>Secure employee workspace</small>
+            </div>
+          </Link>
+          <Link className="employee-login-back" to="/">Back to website</Link>
+        </header>
+
+        <main className="employee-login-main">
+          <section className="employee-login-intro" aria-labelledby="employee-login-title">
+            <p className="section-kicker">Staff access</p>
+            <h1 id="employee-login-title">One place to run customer operations.</h1>
+            <p>Access the ticket inbox, CRM records, assignments, and customer activity through the protected employee workspace.</p>
+            <ul>
+              <li>Customer requests and replies</li>
+              <li>CRM contacts and operational records</li>
+              <li>Role-based employee administration</li>
+            </ul>
+          </section>
+
+          <section className="employee-login-card" aria-label="Employee sign in">
+            <div className="employee-login-card-head">
+              <p className="section-kicker">Employee sign in</p>
+              <h2>Welcome back</h2>
+              <p>Use your work account to continue.</p>
+            </div>
+
+            <form className="employee-login-form" onSubmit={handleLogin}>
+              <label htmlFor="admin-username">Work email or username</label>
+              <input
+                id="admin-username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="name@company.com"
+                required
+              />
+
+              <div className="employee-password-label">
+                <label htmlFor="admin-password">Password</label>
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-pressed={showPassword}>
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              <input
+                id="admin-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+
+              <button className="btn dark-btn employee-login-submit" type="submit" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign in to workspace"}
+              </button>
+            </form>
+
+            <div className="employee-login-divider"><span>or</span></div>
+            <a className="btn ghost-btn employee-microsoft-login" href="/api/admin/microsoft/start">
+              Continue with Microsoft 365
+            </a>
+
+            <p className="employee-login-status" aria-live="polite">{status}</p>
+            <p className="employee-client-handoff">Looking for your requests? <Link to="/portal">Open the client portal</Link>.</p>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <AdminShell user={session?.user}>
       <main className="container submissions-main">
-        <section className="submissions-hero">
-          <p className="section-kicker">{session?.user ? "Ticket operations" : "Employee access"}</p>
-          <h1>{session?.user ? "Ticket inbox" : "Sign in to Animus Operations"}</h1>
-          <p>
-            {session?.user
-              ? "Review new requests, assign ownership, and keep customers updated."
-              : "Use your employee credentials or Microsoft 365 account."}
-          </p>
-          {!session?.user ? (
-            <form className="submissions-unlock" onSubmit={handleLogin}>
-              <label className="submissions-label" htmlFor="admin-username">
-                Employee username
-              </label>
-              <div className="submissions-input-row">
-                <input
-                  id="admin-username"
-                  className="submissions-input"
-                  type="text"
-                  autoComplete="username"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="Enter employee username"
-                />
-              </div>
-              <label className="submissions-label" htmlFor="admin-password">
-                Password
-              </label>
-              <div className="submissions-unlock-row">
-                <input
-                  id="admin-password"
-                  className="submissions-input"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Enter password"
-                />
-                <button className="btn dark-btn" type="submit" disabled={isLoading}>
-                  Sign in
-                </button>
-              </div>
-            </form>
-          ) : null}
-          <div className="submissions-actions">
-            {!session?.user ? (
-              <a className="btn ghost-btn" href="/api/admin/microsoft/start">
-                Continue with Microsoft 365
-              </a>
+        <header className="submissions-hero">
+          <div>
+            <p className="section-kicker">Customer operations</p>
+            <h1>Ticket inbox</h1>
+            <p>Prioritize requests, assign clear ownership, and move every customer issue forward.</p>
+            {latestUpdated ? (
+              <p className="submissions-meta">Queue updated {formatRelativeDate(latestUpdated)}</p>
             ) : null}
-            <button className="btn dark-btn" onClick={fetchTickets} disabled={!session?.user || isLoading}>
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
+          </div>
+          <div className="submissions-actions">
             <button className="btn ghost-btn" onClick={handleExport} disabled={!tickets.length}>
               Export CSV
             </button>
+            <button className="btn dark-btn" onClick={fetchTickets} disabled={!session?.user || isLoading}>
+              {isLoading ? "Refreshing..." : "Refresh queue"}
+            </button>
           </div>
-          {latestUpdated ? (
-            <p className="submissions-meta">Latest update: {formatDate(latestUpdated)}</p>
-          ) : null}
-        </section>
+        </header>
 
-        {status ? <p className="submissions-status">{status}</p> : null}
+        {status ? <p className="submissions-status" role="status">{status}</p> : null}
 
         {session?.user ? (
-          <div className="employee-workspace">
-            <section className="ticket-table-shell card-raise" aria-label="Ticket queue table">
-              <h2>Ticket queue</h2>
-              <div className="ticket-table-wrap">
-                <table className="ticket-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Subject</th>
-                      <th>Status</th>
-                      <th>Source</th>
-                      <th>Assigned</th>
-                      <th>Created</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickets.map((ticket) => (
-                      <tr key={ticket.requestId}>
-                        <td>{ticket.requestId}</td>
-                        <td>{ticket.subject}</td>
-                        <td>{ticket.status || "open"}</td>
-                        <td>{ticket.source || "portal"}</td>
-                        <td>{ticket.assignedTo || "Unassigned"}</td>
-                        <td>{formatDate(ticket.createdAt)}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn ghost-btn"
-                            onClick={() => fetchTicketDetail(ticket.requestId)}
-                            disabled={isDetailLoading}
-                          >
-                            Open
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <>
+            <section className="ticket-metrics" aria-label="Ticket queue summary">
+              <article><span>Total requests</span><strong>{ticketMetrics.total}</strong><small>All intake sources</small></article>
+              <article><span>New</span><strong>{ticketMetrics.new}</strong><small>Awaiting first action</small></article>
+              <article><span>Active</span><strong>{ticketMetrics.active}</strong><small>Still in progress</small></article>
+              <article className={ticketMetrics.unassigned ? "needs-attention" : ""}><span>Unassigned</span><strong>{ticketMetrics.unassigned}</strong><small>{ticketMetrics.unassigned ? "Needs an owner" : "Queue covered"}</small></article>
             </section>
 
-            <section className="ticket-detail-shell card-raise">
-              <h2>Ticket detail</h2>
-              {selectedTicket ? (
-                <>
-                  <div className="submission-grid">
-                    <div>
-                      <strong>Request ID</strong>
-                      <span>{selectedTicket.requestId}</span>
-                    </div>
-                    <div>
-                      <strong>Status</strong>
-                      <span>{selectedTicket.status || "open"}</span>
-                    </div>
-                    <div>
-                      <strong>Source</strong>
-                      <span>{selectedTicket.source || "portal"}</span>
-                    </div>
-                    <div>
-                      <strong>Created</strong>
-                      <span>{formatDate(selectedTicket.createdAt)}</span>
-                    </div>
-                  </div>
+            <div className="employee-workspace">
+              <section className="ticket-queue-shell" aria-label="Ticket queue">
+                <header className="ticket-panel-header">
+                  <div><span>Queue</span><h2>Customer requests</h2></div>
+                  <strong>{filteredTickets.length}</strong>
+                </header>
 
-                  <div className="submission-notes">
-                    <div>
-                      <strong>Subject</strong>
-                      <p>{selectedTicket.subject}</p>
-                    </div>
-                    <div>
-                      <strong>Details</strong>
-                      <p>{selectedTicket.message}</p>
-                    </div>
-                  </div>
-
-                  <div className="crm-action-panel">
-                    <div className="crm-action-card">
-                      <strong>Save CRM note</strong>
-                      <textarea
-                        className="submissions-input"
-                        rows={4}
-                        value={crmNoteBody}
-                        onChange={(event) => setCrmNoteBody(event.target.value)}
-                        placeholder="Add an internal CRM note from this ticket"
-                      />
-                      <button className="btn ghost-btn" type="button" onClick={handleCreateCrmNote} disabled={isCreatingCrmNote}>
-                        {isCreatingCrmNote ? "Saving..." : "Save note to CRM"}
-                      </button>
-                    </div>
-
-                    <div className="crm-action-card">
-                      <strong>Create CRM task</strong>
-                      <input
-                        className="submissions-input"
-                        type="text"
-                        value={crmTaskTitle}
-                        onChange={(event) => setCrmTaskTitle(event.target.value)}
-                        placeholder="Follow-up task title"
-                      />
-                      <textarea
-                        className="submissions-input"
-                        rows={3}
-                        value={crmTaskDescription}
-                        onChange={(event) => setCrmTaskDescription(event.target.value)}
-                        placeholder="Optional task description"
-                      />
-                      <input
-                        className="submissions-input"
-                        type="date"
-                        value={crmTaskDueDate}
-                        onChange={(event) => setCrmTaskDueDate(event.target.value)}
-                      />
-                      <button className="btn dark-btn" type="button" onClick={handleCreateCrmTask} disabled={isCreatingCrmTask}>
-                        {isCreatingCrmTask ? "Creating..." : "Create CRM task"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="timeline-list">
-                    <h3>CRM activity</h3>
-                    {isActivityLoading ? (
-                      <p className="submissions-meta">Loading CRM activity...</p>
-                    ) : crmActivity.length ? (
-                      crmActivity.map((item) => (
-                        <article key={item.id} className="timeline-item">
-                          <strong>{item.type === "task" ? "Task" : item.type === "note" ? "Note" : "Activity"}</strong>
-                          <span>{formatDate(item.createdAt)}</span>
-                          {item.type === "task" ? (
-                            <p>
-                              {item.title}
-                              {item.body ? ` • ${item.body}` : ""}
-                              {item.dueDate ? ` • Due ${formatDate(item.dueDate)}` : ""}
-                            </p>
-                          ) : (
-                            <p>{item.body || item.title || "CRM record created."}</p>
-                          )}
-                        </article>
-                      ))
-                    ) : (
-                      <p className="submissions-meta">No CRM notes or tasks have been added yet.</p>
-                    )}
-                  </div>
-
-                  <div className="assignment-row status-row">
-                    <label htmlFor="ticket-assignee" className="submissions-label">Assignee</label>
-                    <select
-                      id="ticket-assignee"
-                      className="submissions-input"
-                      value={selectedAssignee}
-                      onChange={(event) => setSelectedAssignee(event.target.value)}
-                    >
-                      <option value="">Unassigned</option>
-                      {users.map((user) => (
-                        <option key={user.username} value={user.username}>
-                          {user.username} ({user.role})
-                        </option>
-                      ))}
-                    </select>
-                    <button className="btn dark-btn" type="button" onClick={handleAssign} disabled={isAssigning}>
-                      {isAssigning ? "Saving..." : "Save assignment"}
-                    </button>
-                  </div>
-
-                  <div className="assignment-row">
-                    <label htmlFor="ticket-status" className="submissions-label">Status</label>
-                    <select
-                      id="ticket-status"
-                      className="submissions-input"
-                      value={selectedStatus}
-                      onChange={(event) => setSelectedStatus(event.target.value)}
-                    >
-                      <option value="open">Open</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="waiting">Waiting</option>
-                      <option value="resolved">Resolved</option>
-                    </select>
-                    <textarea
-                      className="submissions-input"
-                      rows={2}
-                      value={statusNote}
-                      onChange={(event) => setStatusNote(event.target.value)}
-                      placeholder="Optional note for timeline"
+                <div className="ticket-toolbar">
+                  <label className="ticket-search">
+                    <span className="sr-only">Search tickets</span>
+                    <input
+                      type="search"
+                      value={ticketQuery}
+                      onChange={(event) => setTicketQuery(event.target.value)}
+                      placeholder="Search subject, ID, or owner"
                     />
-                    <button
-                      className="btn dark-btn"
-                      type="button"
-                      onClick={handleStatusUpdate}
-                      disabled={isUpdatingStatus}
-                    >
-                      {isUpdatingStatus ? "Updating..." : "Update status"}
-                    </button>
-                  </div>
+                  </label>
+                  <select aria-label="Filter by status" value={ticketStatusFilter} onChange={(event) => setTicketStatusFilter(event.target.value)}>
+                    <option value="all">All statuses</option>
+                    <option value="received">Received</option>
+                    <option value="open">Open</option>
+                    <option value="in-progress">In progress</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <select aria-label="Filter by ownership" value={ticketOwnershipFilter} onChange={(event) => setTicketOwnershipFilter(event.target.value)}>
+                    <option value="all">Everyone</option>
+                    <option value="mine">Assigned to me</option>
+                    <option value="unassigned">Unassigned</option>
+                  </select>
+                </div>
 
-                  <div className="timeline-list">
-                    <h3>Timeline</h3>
-                    {(selectedTicket.timeline || []).map((event) => (
-                      <article key={event.id || `${event.type}-${event.createdAt}`} className="timeline-item">
-                        <strong>{String(event.type || "update").replaceAll("_", " ")}</strong>
-                        <span>{formatDate(event.createdAt)}</span>
-                        <p>{event.note || "Status updated."}</p>
-                      </article>
-                    ))}
-                  </div>
+                <div className="ticket-queue-list">
+                  {filteredTickets.map((ticket) => {
+                    const ticketStatus = normalizeStatus(ticket.status);
+                    const isSelected = ticket.requestId === selectedTicket?.requestId;
 
-                  <div className="timeline-list">
-                    <h3>Assignment audit trail</h3>
-                    {assignmentEvents.length ? (
-                      assignmentEvents.map((event) => (
-                        <article key={`assignment-${event.id || `${event.type}-${event.createdAt}`}`} className="timeline-item">
-                          <strong>{event.note || "Assignment updated."}</strong>
-                          <span>{formatDate(event.createdAt)}</span>
-                          <p>By {event.actor || "system"}</p>
-                        </article>
-                      ))
-                    ) : (
-                      <p className="submissions-meta">No assignment changes recorded yet.</p>
-                    )}
+                    return (
+                      <button
+                        type="button"
+                        className={`ticket-queue-item${isSelected ? " is-selected" : ""}`}
+                        key={ticket.requestId}
+                        onClick={() => fetchTicketDetail(ticket.requestId)}
+                        aria-pressed={isSelected}
+                      >
+                        <span className={`ticket-status-dot status-${ticketStatus}`} aria-hidden="true" />
+                        <span className="ticket-queue-copy">
+                          <span className="ticket-queue-subject">{ticket.subject || "Untitled request"}</span>
+                          <span className="ticket-queue-preview">{ticket.message || ticket.requestId}</span>
+                          <span className="ticket-queue-meta">
+                            <span>{ticket.assignedTo || "Unassigned"}</span>
+                            <span>{ticket.source || "portal"}</span>
+                          </span>
+                        </span>
+                        <span className="ticket-queue-side">
+                          <time dateTime={ticket.createdAt}>{formatRelativeDate(ticket.createdAt)}</time>
+                          <span className={`ticket-status-pill status-${ticketStatus}`}>{humanize(ticketStatus)}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {!filteredTickets.length ? (
+                    <div className="ticket-empty-state">
+                      <strong>No matching tickets</strong>
+                      <p>Adjust the search or filters to see more requests.</p>
+                      <button type="button" onClick={() => { setTicketQuery(""); setTicketStatusFilter("all"); setTicketOwnershipFilter("all"); }}>Clear filters</button>
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+
+              <section className="ticket-detail-shell" aria-label="Selected ticket detail" aria-busy={isDetailLoading}>
+                {selectedTicket ? (
+                  <>
+                    <header className="ticket-detail-header">
+                      <div>
+                        <span className="ticket-detail-id">{selectedTicket.requestId}</span>
+                        <h2>{selectedTicket.subject || "Untitled request"}</h2>
+                      </div>
+                      <span className={`ticket-status-pill status-${normalizeStatus(selectedTicket.status)}`}>{humanize(selectedTicket.status)}</span>
+                    </header>
+
+                    <div className="ticket-detail-meta">
+                      <div><span>Created</span><strong>{formatDate(selectedTicket.createdAt)}</strong></div>
+                      <div><span>Source</span><strong>{humanize(selectedTicket.source || "portal")}</strong></div>
+                      <div><span>Owner</span><strong>{selectedTicket.assignedTo || "Unassigned"}</strong></div>
+                    </div>
+
+                    <section className="ticket-message">
+                      <span>Customer request</span>
+                      <p>{selectedTicket.message || "No additional details were provided."}</p>
+                    </section>
+
+                    <section className="ticket-workflow-controls" aria-label="Ticket workflow controls">
+                      <div className="ticket-control-card">
+                        <div><span>Ownership</span><strong>Assign teammate</strong></div>
+                        <select id="ticket-assignee" className="submissions-input" value={selectedAssignee} onChange={(event) => setSelectedAssignee(event.target.value)}>
+                          <option value="">Unassigned</option>
+                          {users.map((user) => <option key={user.username} value={user.username}>{user.username} ({user.role})</option>)}
+                        </select>
+                        <button className="btn ghost-btn" type="button" onClick={handleAssign} disabled={isAssigning}>{isAssigning ? "Saving..." : "Save owner"}</button>
+                      </div>
+
+                      <div className="ticket-control-card">
+                        <div><span>Lifecycle</span><strong>Update status</strong></div>
+                        <select id="ticket-status" className="submissions-input" value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value)}>
+                          <option value="received">Received</option>
+                          <option value="open">Open</option>
+                          <option value="in-progress">In progress</option>
+                          <option value="waiting">Waiting</option>
+                          <option value="resolved">Resolved</option>
+                        </select>
+                        <textarea className="submissions-input" rows={2} value={statusNote} onChange={(event) => setStatusNote(event.target.value)} placeholder="Optional update note" />
+                        <button className="btn dark-btn" type="button" onClick={handleStatusUpdate} disabled={isUpdatingStatus}>{isUpdatingStatus ? "Updating..." : "Update status"}</button>
+                      </div>
+                    </section>
+
+                    <details className="ticket-detail-section">
+                      <summary><span><small>CRM actions</small><strong>Notes and follow-up tasks</strong></span><span aria-hidden="true">+</span></summary>
+                      <div className="crm-action-panel">
+                        <div className="crm-action-card">
+                          <strong>Save internal note</strong>
+                          <textarea className="submissions-input" rows={4} value={crmNoteBody} onChange={(event) => setCrmNoteBody(event.target.value)} placeholder="Add context for the team" />
+                          <button className="btn ghost-btn" type="button" onClick={handleCreateCrmNote} disabled={isCreatingCrmNote}>{isCreatingCrmNote ? "Saving..." : "Save note"}</button>
+                        </div>
+                        <div className="crm-action-card">
+                          <strong>Create follow-up task</strong>
+                          <input className="submissions-input" type="text" value={crmTaskTitle} onChange={(event) => setCrmTaskTitle(event.target.value)} placeholder="Task title" />
+                          <textarea className="submissions-input" rows={3} value={crmTaskDescription} onChange={(event) => setCrmTaskDescription(event.target.value)} placeholder="Optional description" />
+                          <input className="submissions-input" type="date" value={crmTaskDueDate} onChange={(event) => setCrmTaskDueDate(event.target.value)} />
+                          <button className="btn dark-btn" type="button" onClick={handleCreateCrmTask} disabled={isCreatingCrmTask}>{isCreatingCrmTask ? "Creating..." : "Create task"}</button>
+                        </div>
+                      </div>
+                    </details>
+
+                    <details className="ticket-detail-section" open>
+                      <summary><span><small>History</small><strong>Customer and team timeline</strong></span><span aria-hidden="true">+</span></summary>
+                      <div className="timeline-list">
+                        {(selectedTicket.timeline || []).map((event) => (
+                          <article key={event.id || `${event.type}-${event.createdAt}`} className="timeline-item">
+                            <span className="timeline-marker" aria-hidden="true" />
+                            <div><strong>{humanize(event.type)}</strong><p>{event.note || "Status updated."}</p><span>{event.actor || "system"}</span></div>
+                            <time>{formatRelativeDate(event.createdAt)}</time>
+                          </article>
+                        ))}
+                        {!selectedTicket.timeline?.length ? <p className="submissions-meta">No timeline events yet.</p> : null}
+                      </div>
+                    </details>
+
+                    <details className="ticket-detail-section">
+                      <summary><span><small>CRM history</small><strong>Notes, tasks, and assignment audit</strong></span><span aria-hidden="true">+</span></summary>
+                      <div className="timeline-list">
+                        {isActivityLoading ? <p className="submissions-meta">Loading CRM activity...</p> : null}
+                        {crmActivity.map((item) => (
+                          <article key={item.id} className="timeline-item">
+                            <span className="timeline-marker" aria-hidden="true" />
+                            <div><strong>{item.type === "task" ? "Task" : item.type === "note" ? "Note" : "Activity"}</strong><p>{item.title || item.body || "CRM record created."}</p></div>
+                            <time>{formatRelativeDate(item.createdAt)}</time>
+                          </article>
+                        ))}
+                        {assignmentEvents.map((event) => (
+                          <article key={`assignment-${event.id || `${event.type}-${event.createdAt}`}`} className="timeline-item">
+                            <span className="timeline-marker" aria-hidden="true" />
+                            <div><strong>Assignment</strong><p>{event.note || "Assignment updated."}</p><span>{event.actor || "system"}</span></div>
+                            <time>{formatRelativeDate(event.createdAt)}</time>
+                          </article>
+                        ))}
+                        {!isActivityLoading && !crmActivity.length && !assignmentEvents.length ? <p className="submissions-meta">No CRM or assignment activity yet.</p> : null}
+                      </div>
+                    </details>
+                  </>
+                ) : (
+                  <div className="ticket-detail-empty">
+                    <span aria-hidden="true">↗</span>
+                    <strong>Select a customer request</strong>
+                    <p>Choose a ticket from the queue to review its context, owner, status, and history.</p>
                   </div>
-                </>
-              ) : (
-                <p className="submissions-meta">Pick a ticket from the table to view details.</p>
-              )}
-            </section>
-          </div>
+                )}
+              </section>
+            </div>
+          </>
         ) : null}
 
         {session?.user?.role === "admin" ? (
           <section className="user-admin-shell card-raise">
-            <h2>Employee access management</h2>
+            <header className="user-admin-header">
+              <div>
+                <p className="section-kicker">Administration</p>
+                <h2>Employee access</h2>
+                <p>Create staff accounts and review current workspace permissions.</p>
+              </div>
+              <span>{users.length} team {users.length === 1 ? "member" : "members"}</span>
+            </header>
             <form className="submissions-unlock" onSubmit={handleCreateUser}>
-              <label className="submissions-label" htmlFor="new-username">Username</label>
-              <input
-                id="new-username"
-                className="submissions-input"
-                type="text"
-                value={newUser.username}
-                onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))}
-              />
-              <label className="submissions-label" htmlFor="new-password">Password</label>
-              <input
-                id="new-password"
-                className="submissions-input"
-                type="password"
-                minLength={8}
-                value={newUser.password}
-                onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
-              />
-              <label className="submissions-label" htmlFor="new-role">Role</label>
-              <select
-                id="new-role"
-                className="submissions-input"
-                value={newUser.role}
-                onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value }))}
-              >
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-              </select>
+              <label className="submissions-label" htmlFor="new-username">
+                <span>Work email or username</span>
+                <input id="new-username" className="submissions-input" type="text" value={newUser.username} onChange={(event) => setNewUser((prev) => ({ ...prev, username: event.target.value }))} placeholder="teammate@company.com" />
+              </label>
+              <label className="submissions-label" htmlFor="new-password">
+                <span>Temporary password</span>
+                <input id="new-password" className="submissions-input" type="password" minLength={8} value={newUser.password} onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))} placeholder="At least 8 characters" />
+              </label>
+              <label className="submissions-label" htmlFor="new-role">
+                <span>Workspace role</span>
+                <select id="new-role" className="submissions-input" value={newUser.role} onChange={(event) => setNewUser((prev) => ({ ...prev, role: event.target.value }))}>
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
               <button className="btn dark-btn" type="submit" disabled={isLoading}>
-                Add or update user
+                Add team member
               </button>
             </form>
 
             <div className="user-chip-list">
               {users.map((user) => (
                 <div className="user-chip" key={user.username}>
-                  <strong>{user.username}</strong>
-                  <span>{user.role}</span>
+                  <span className="user-chip-avatar" aria-hidden="true">{String(user.username || "U").slice(0, 1).toUpperCase()}</span>
+                  <div><strong>{user.username}</strong><span>{humanize(user.role)}</span></div>
                 </div>
               ))}
             </div>

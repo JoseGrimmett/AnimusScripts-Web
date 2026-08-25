@@ -1,6 +1,6 @@
 .admin-app-shell {
-  --admin-accent: #62d6a7;
-  --admin-accent-soft: rgba(98, 214, 167, 0.14);
+  --admin-accent: #8fc4ea;
+  --admin-accent-soft: rgba(143, 196, 234, 0.12);
   --admin-panel: #111b2b;
   min-height: 100vh;
   display: grid;
@@ -15,7 +15,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 1.35rem 1rem;
+  padding: 1.2rem 0.85rem;
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(202, 225, 232, 0.1);
@@ -25,7 +25,8 @@
 .admin-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
+  padding-inline: 0.35rem;
 }
 
 .admin-brand-mark {
@@ -35,7 +36,7 @@
   place-items: center;
   border-radius: 0.7rem;
   background: var(--admin-accent);
-  color: #07140f;
+  color: #06101f;
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -49,33 +50,44 @@
 .admin-brand strong { font-size: 0.95rem; }
 .admin-brand div > span { margin-top: 0.15rem; color: #7f95a3; font-size: 0.76rem; }
 
+.admin-nav-section-label {
+  margin: 2rem 0.65rem 0.55rem;
+  color: #526b7f;
+  font-size: 0.63rem;
+  font-weight: 760;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
 .admin-nav {
   display: grid;
   gap: 0.35rem;
-  margin-top: 2rem;
+  margin-top: 0;
 }
 
 .admin-nav a {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.78rem 0.85rem;
+  gap: 0.72rem;
+  min-height: 44px;
+  padding: 0.7rem 0.75rem;
   border-radius: 0.7rem;
   color: #9fb0bb;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 650;
 }
 
-.admin-nav a span { color: #58707e; font-family: monospace; font-size: 0.72rem; }
+.admin-nav a svg { width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; opacity: 0.72; }
+.admin-nav a svg path:first-child { vector-effect: non-scaling-stroke; }
 .admin-nav a:hover { background: rgba(255, 255, 255, 0.04); color: #eef5f7; }
-.admin-nav a.active { background: var(--admin-accent-soft); color: #dffbef; }
-.admin-nav a.active span { color: var(--admin-accent); }
+.admin-nav a.active { background: var(--admin-accent-soft); color: #c9e3f6; box-shadow: inset 3px 0 var(--admin-accent); }
+.admin-nav a.active svg { color: var(--admin-accent); opacity: 1; }
 
 .admin-sidebar-footer { margin-top: auto; display: grid; gap: 0.8rem; }
 .admin-sidebar-footer > p { color: #718795; font-size: 0.78rem; }
 .admin-user-card { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
-.admin-user-avatar { flex: 0 0 auto; width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 50%; background: #1c3140; color: var(--admin-accent); font-weight: 800; }
+.admin-user-avatar { flex: 0 0 auto; width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 0.55rem; background: #132a42; color: var(--admin-accent); font-weight: 800; }
 .admin-user-card div { min-width: 0; }
 .admin-user-card strong, .admin-user-card div span { display: block; overflow: hidden; text-overflow: ellipsis; }
 .admin-user-card strong { font-size: 0.78rem; white-space: nowrap; }
@@ -83,7 +95,7 @@
 .admin-public-link { color: #8299a7; font-size: 0.78rem; text-decoration: none; }
 .admin-public-link:hover { color: var(--admin-accent); }
 .admin-signout { width: 100%; padding: 0.55rem 0.65rem; border: 1px solid rgba(202, 225, 232, 0.14); border-radius: 0.55rem; background: transparent; color: #9fb0bb; text-align: left; cursor: pointer; }
-.admin-signout:hover { border-color: rgba(98, 214, 167, 0.4); color: #dffbef; }
+.admin-signout:hover { border-color: rgba(143, 196, 234, 0.4); color: #d7eaf7; }
 
 .admin-app-content { min-width: 0; }
 .admin-mobile-header { display: none; }
@@ -92,12 +104,12 @@
 .admin-app-shell .dark-btn {
   background: var(--admin-accent);
   border-color: var(--admin-accent);
-  color: #07140f;
+  color: #06101f;
 }
 
 .admin-app-shell .dark-btn:hover {
-  background: #7ae3b9;
-  border-color: #7ae3b9;
+  background: #abd6f2;
+  border-color: #abd6f2;
 }
 
 .admin-app-shell .ghost-btn {
@@ -106,8 +118,8 @@
 }
 
 .admin-app-shell .ghost-btn:hover {
-  border-color: rgba(98, 214, 167, 0.5);
-  background: rgba(98, 214, 167, 0.08);
+  border-color: rgba(143, 196, 234, 0.5);
+  background: rgba(143, 196, 234, 0.08);
 }
 
 @media (max-width: 860px) {

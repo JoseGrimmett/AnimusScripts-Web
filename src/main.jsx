@@ -16,55 +16,44 @@ import PortalPage from './Pages/PortalPage.jsx';
 import EmployeeRouteGuard from './Components/RouteGuards/EmployeeRouteGuard.jsx';
 import ToastHost from './Components/ToastHost/ToastHost.jsx';
 import AnalyticsRouteTracker from './Components/AnalyticsRouteTracker/AnalyticsRouteTracker.jsx';
+import AppErrorBoundary from './Components/AppErrorBoundary/AppErrorBoundary.jsx';
 import './styles/design-system.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <AnalyticsRouteTracker />
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/services" element={<ServicesIndexPage />} />
-        <Route path="/services/:slug" element={<ServiceDetailPage />} />
-        <Route path="/what-we-build" element={<WhatWeBuildPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/portal" element={<PortalPage />} />
-        <Route
-          path="/admin"
-          element={(
-            <EmployeeRouteGuard>
-              <SubmissionsPage />
-            </EmployeeRouteGuard>
-          )}
-        />
-        <Route
-          path="/admin/dashboard"
-          element={(
-            <EmployeeRouteGuard>
-              <AdminDashboardPage />
-            </EmployeeRouteGuard>
-          )}
-        />
-        <Route
-          path="/admin/crm"
-          element={(
-            <EmployeeRouteGuard>
-              <AdminCrmPage />
-            </EmployeeRouteGuard>
-          )}
-        />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route
-          path="/submissions"
-          element={(
-            <EmployeeRouteGuard>
-              <SubmissionsPage />
-            </EmployeeRouteGuard>
-          )}
-        />
-        <Route path="/pricing" element={<PricingPage />} />
-      </Routes>
-      <ToastHost />
+      <AppErrorBoundary>
+        <AnalyticsRouteTracker />
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/services" element={<ServicesIndexPage />} />
+          <Route path="/services/:slug" element={<ServiceDetailPage />} />
+          <Route path="/what-we-build" element={<WhatWeBuildPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/portal" element={<PortalPage />} />
+          <Route path="/admin" element={<SubmissionsPage />} />
+          <Route
+            path="/admin/dashboard"
+            element={(
+              <EmployeeRouteGuard>
+                <AdminDashboardPage />
+              </EmployeeRouteGuard>
+            )}
+          />
+          <Route
+            path="/admin/crm"
+            element={(
+              <EmployeeRouteGuard>
+                <AdminCrmPage />
+              </EmployeeRouteGuard>
+            )}
+          />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/submissions" element={<SubmissionsPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+        </Routes>
+        <ToastHost />
+      </AppErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 );

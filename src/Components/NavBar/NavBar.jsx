@@ -10,6 +10,7 @@ const NavBar = () => {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [workspacesMenuOpen, setWorkspacesMenuOpen] = useState(false);
+  const [loginMenuOpen, setLoginMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
   const [portalUser, setPortalUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -77,9 +78,10 @@ const NavBar = () => {
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
-      if (!event.target.closest(".utility-user") && !event.target.closest(".utility-workspaces")) {
+      if (!event.target.closest(".utility-user") && !event.target.closest(".utility-workspaces") && !event.target.closest(".nav-login")) {
         setUserMenuOpen(false);
         setWorkspacesMenuOpen(false);
+        setLoginMenuOpen(false);
       }
     };
 
@@ -95,6 +97,7 @@ const NavBar = () => {
     setMobileMenu(false);
     setUserMenuOpen(false);
     setWorkspacesMenuOpen(false);
+    setLoginMenuOpen(false);
   };
 
   const toggleUserMenu = (event) => {
@@ -107,6 +110,13 @@ const NavBar = () => {
     setWorkspacesMenuOpen((prev) => !prev);
   };
 
+  const toggleLoginMenu = (event) => {
+    event.stopPropagation();
+    setLoginMenuOpen((prev) => !prev);
+    setUserMenuOpen(false);
+    setWorkspacesMenuOpen(false);
+  };
+
   const navClassName = ({ isActive }) => (isActive ? "nav-active" : "");
 
   const isEmployee = useMemo(() => {
@@ -117,7 +127,9 @@ const NavBar = () => {
     return adminUser.role === "employee" || adminUser.role === "admin";
   }, [adminUser?.role]);
 
-  const hasAnySession = Boolean(adminUser || portalUser);
+  const hasAdminSession = Boolean(adminUser);
+  const hasPortalSession = Boolean(portalUser);
+  const hasAnySession = hasAdminSession || hasPortalSession;
   const userLabel = adminUser?.username || portalUser?.displayName || portalUser?.email || "User";
 
   const handleSignOut = async () => {
@@ -203,25 +215,27 @@ const NavBar = () => {
               Contact
             </NavLink>
           </li>
-          {!hasAnySession && !isAuthLoading ? (
-            <li className="auth-nav-item">
-              <NavLink to="/admin" onClick={closeMenu} className={navClassName}>
-                Employee Login
-              </NavLink>
-            </li>
-          ) : null}
-          {!hasAnySession && !isAuthLoading ? (
-            <li className="auth-nav-item">
-              <a href="/api/admin/microsoft/start" onClick={closeMenu} className="auth-nav-link">
-                Windows Login
-              </a>
-            </li>
-          ) : null}
-          {!hasAnySession && !isAuthLoading ? (
-            <li className="auth-nav-item">
-              <NavLink to="/portal" onClick={closeMenu} className={navClassName}>
-                Client Login
-              </NavLink>
+          {(!hasAdminSession || !hasPortalSession) && !isAuthLoading ? (
+            <li className="auth-nav-item nav-login nav-login-mobile">
+              <button type="button" className="login-trigger" onClick={toggleLoginMenu} aria-expanded={loginMenuOpen}>
+                Login
+              </button>
+              {loginMenuOpen ? (
+                <div className="login-menu">
+                  {!hasAdminSession ? (
+                    <Link to="/admin" onClick={closeMenu}>
+                      <strong>Employee workspace</strong>
+                      <span>Dashboard, inbox, and CRM</span>
+                    </Link>
+                  ) : null}
+                  {!hasPortalSession ? (
+                    <Link to="/portal" onClick={closeMenu}>
+                      <strong>Client portal</strong>
+                      <span>Requests, replies, and status</span>
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           ) : null}
         </ul>
@@ -259,11 +273,28 @@ const NavBar = () => {
               )}
             </div>
           ) : null}
-          {!hasAnySession && !isAuthLoading ? (
-            <div className="utility-auth-links">
-              <Link to="/admin" className="utility-auth-link" onClick={closeMenu}>Employee Login</Link>
-              <a className="utility-auth-link" href="/api/admin/microsoft/start">Windows Login</a>
-              <Link to="/portal" className="utility-auth-link" onClick={closeMenu}>Client Login</Link>
+          {(!hasAdminSession || !hasPortalSession) && !isAuthLoading ? (
+            <div className="nav-login nav-login-desktop">
+              <button type="button" className="login-trigger" onClick={toggleLoginMenu} aria-expanded={loginMenuOpen}>
+                Login
+              </button>
+              {loginMenuOpen ? (
+                <div className="login-menu">
+                  <p>Choose your workspace</p>
+                  {!hasAdminSession ? (
+                    <Link to="/admin" onClick={closeMenu}>
+                      <strong>Employee workspace</strong>
+                      <span>Dashboard, inbox, and CRM</span>
+                    </Link>
+                  ) : null}
+                  {!hasPortalSession ? (
+                    <Link to="/portal" onClick={closeMenu}>
+                      <strong>Client portal</strong>
+                      <span>Requests, replies, and status</span>
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
           {hasAnySession ? (

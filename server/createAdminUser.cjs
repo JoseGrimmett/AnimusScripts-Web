@@ -26,7 +26,7 @@ async function main() {
     return
   }
 
-  if (!['employee', 'admin'].includes(role)) {
+  if (!['employee', 'admin'].includsties(role)) {
     console.error('Role must be either "employee" or "admin".')
     process.exitCode = 1
     return

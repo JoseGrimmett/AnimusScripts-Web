@@ -22,17 +22,18 @@ const AdminShell = ({ user, children }) => {
         </div>
       </div>
 
+      <p className="admin-nav-section-label">Workspace</p>
       <nav className="admin-nav">
-        <NavLink to="/admin/dashboard" className={({ isActive }) => isActive ? "active" : ""}>
-          <span aria-hidden="true">01</span>
+        <NavLink to="/admin/dashboard" className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
           Overview
         </NavLink>
-        <NavLink to="/admin" end className={({ isActive }) => isActive ? "active" : ""}>
-          <span aria-hidden="true">02</span>
+        <NavLink to="/admin" end className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 13h4l2 3h4l2-3h4" /></svg>
           Ticket inbox
         </NavLink>
-        <NavLink to="/admin/crm" className={({ isActive }) => isActive ? "active" : ""}>
-          <span aria-hidden="true">03</span>
+        <NavLink to="/admin/crm" className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16.5 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3 19v-2.2C3 14.7 5.2 13 8 13s5 1.7 5 3.8V19ZM14 19v-2c0-1.2-.5-2.3-1.4-3.1.8-.5 1.8-.9 2.9-.9 2.5 0 4.5 1.5 4.5 3.5V19Z" /></svg>
           CRM records
         </NavLink>
       </nav>
@@ -49,7 +50,7 @@ const AdminShell = ({ user, children }) => {
                 <span>{user.role || "employee"}</span>
               </div>
             </div>
-            <button type="button" className="admin-signout" onClick={handleSignOut}>Sign out</button>
+            <button type="button" className="admin-signout" onClick={handleSignOut}>Sign out of workspace</button>
           </>
         ) : (
           <p>Secure employee access</p>

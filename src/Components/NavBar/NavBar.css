@@ -5,6 +5,83 @@
   flex-shrink: 0;
 }
 
+.nav-login { position: relative; }
+
+.login-trigger {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(20, 45, 70, 0.16);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: #29485f;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.login-trigger::after {
+  content: '';
+  width: 0.38rem;
+  height: 0.38rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.login-trigger[aria-expanded="true"] {
+  border-color: rgba(50, 111, 158, 0.35);
+  background: rgba(143, 196, 234, 0.18);
+}
+
+.login-menu {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  width: 290px;
+  padding: 0.55rem;
+  border: 1px solid rgba(20, 45, 70, 0.14);
+  border-radius: 0.75rem;
+  background: #f8fbfd;
+  box-shadow: 0 22px 55px rgba(20, 45, 70, 0.18);
+}
+
+.login-menu > p {
+  padding: 0.45rem 0.55rem 0.55rem;
+  color: #71869a;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.login-menu a {
+  display: grid !important;
+  gap: 0.18rem;
+  width: 100%;
+  padding: 0.72rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.6rem !important;
+  color: #10263b !important;
+  text-decoration: none;
+}
+
+.login-menu a:hover {
+  border-color: rgba(50, 111, 158, 0.16) !important;
+  background: rgba(143, 196, 234, 0.12) !important;
+  transform: none !important;
+}
+
+.login-menu strong { font-size: 0.88rem; }
+.login-menu span { color: #667b8e; font-size: 0.76rem; line-height: 1.35; }
+.nav-login-mobile { display: none; }
+
+@media (max-width: 1180px) {
+  .nav-login-mobile { display: list-item; }
+  .nav-login-desktop { display: none; }
+}
+
 .utility-workspaces {
   position: relative;
 }
@@ -458,6 +535,16 @@
   .auth-nav-item {
     display: list-item;
   }
+
+  .nav-login-mobile { display: list-item; }
+  .nav-login-mobile .login-trigger { width: 100%; justify-content: space-between; }
+  .nav-login-mobile .login-menu {
+    position: static;
+    width: 100%;
+    margin-top: 0.4rem;
+    box-shadow: none;
+  }
+  .nav-login-desktop { display: none; }
 
   .nav-links a:active {
     background: rgba(122, 162, 255, 0.15);

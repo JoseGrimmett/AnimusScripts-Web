@@ -46,7 +46,7 @@ const EmployeeRouteGuard = ({ children }) => {
   }
 
   if (status === "denied") {
-    return <Navigate to="/portal?notice=employee-access-required" replace />;
+    return <Navigate to="/admin?notice=employee-access-required" replace />;
   }
 
   return children;

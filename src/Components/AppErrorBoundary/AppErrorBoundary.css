@@ -1,0 +1,93 @@
+.app-error-boundary {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  color: #12253e;
+  background:
+    radial-gradient(circle at 16% 10%, rgba(153, 199, 232, 0.28), transparent 30rem),
+    #edf4f8;
+}
+
+.app-error-boundary__card {
+  width: min(100%, 42rem);
+  padding: clamp(1.75rem, 5vw, 3.5rem);
+  border: 1px solid #cfdae4;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1.5rem 4rem rgba(18, 37, 62, 0.12);
+}
+
+.app-error-boundary__eyebrow {
+  margin: 0 0 0.75rem;
+  color: #42698e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.app-error-boundary h1 {
+  margin: 0;
+  max-width: 14ch;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1;
+}
+
+.app-error-boundary h1 + p {
+  margin: 1.25rem 0 0;
+  color: #53677c;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.app-error-boundary__detail {
+  max-width: 100%;
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid #d9b874;
+  border-radius: 0.75rem;
+  color: #12253e;
+  background: #fff8e8;
+  font: 0.88rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.app-error-boundary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.app-error-boundary__actions button,
+.app-error-boundary__actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.15rem;
+  border: 1px solid #2d5d88;
+  border-radius: 0.75rem;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app-error-boundary__actions button {
+  color: #fff;
+  background: #214e78;
+}
+
+.app-error-boundary__actions a {
+  color: #214e78;
+  background: #fff;
+}
+
+.app-error-boundary__actions button:focus-visible,
+.app-error-boundary__actions a:focus-visible {
+  outline: 3px solid rgba(59, 130, 190, 0.38);
+  outline-offset: 3px;
+}
