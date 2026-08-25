@@ -1567,6 +1567,20 @@ async function ensurePostgres() {
     )
   `)
 
+  await postgresPool.query(`
+    CREATE TABLE IF NOT EXISTS system_audit_events (
+      id BIGSERIAL PRIMARY KEY,
+      actor_type TEXT NOT NULL,
+      actor_id TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      ip_address TEXT,
+      metadata_json JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
   await ensureCrmSchemaPostgres(postgresPool)
 
   postgresReady = true
@@ -1657,6 +1671,20 @@ function ensureSqlite() {
       assigned_to TEXT,
       assigned_by TEXT,
       assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS system_audit_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_type TEXT NOT NULL,
+      actor_id TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      ip_address TEXT,
+      metadata_json TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
 
@@ -2344,6 +2372,46 @@ async function createPortalTicket({ requestId, email, subject, message }) {
     portalUser: portalUser || { id: null, email: normalizedEmail, displayName: null },
   }))
   return ticket
+}
+
+async function createPortalTicketReply({ email, requestId, message }) {
+  const normalizedEmail = normalizePortalEmail(email)
+  const normalizedRequestId = String(requestId || '').trim()
+  const normalizedMessage = String(message || '').trim()
+
+  if (!normalizedEmail || !normalizedRequestId || !normalizedMessage) {
+    throw new Error('email, requestId, and message are required')
+  }
+
+  const ownedTicket = await getPortalTicketDetailByEmail(normalizedEmail, normalizedRequestId)
+  if (!ownedTicket) {
+    return null
+  }
+
+  await insertPortalTicketEvent({
+    requestId: normalizedRequestId,
+    eventType: 'client_reply',
+    status: null,
+    note: normalizedMessage,
+    actor: normalizedEmail,
+  })
+
+  await runCrmSyncSafely('portal ticket reply', async () => {
+    const crmTicket = await findCrmTicketByRequestId(normalizedRequestId)
+    if (!crmTicket) return null
+    return createCrmActivityEvent({
+      entityType: 'ticket',
+      entityId: normalizedRequestId,
+      organizationId: crmTicket.organizationId || null,
+      contactId: crmTicket.contactId || null,
+      ticketId: crmTicket.id,
+      action: 'client_reply',
+      payloadJson: JSON.stringify({ message: normalizedMessage, email: normalizedEmail }),
+      actorAdminId: null,
+    })
+  })
+
+  return getPortalTicketDetailByEmail(normalizedEmail, normalizedRequestId)
 }
 
 function mapSubmissionToTicket(row) {
@@ -3167,6 +3235,45 @@ async function getCrmBackfillSources() {
   }
 }
 
+async function recordAuditEvent({ actorType, actorId = null, action, entityType = null, entityId = null, ipAddress = null, metadata = null }) {
+  const normalizedActorType = String(actorType || '').trim()
+  const normalizedAction = String(action || '').trim()
+  if (!normalizedActorType || !normalizedAction) {
+    throw new Error('actorType and action are required')
+  }
+
+  const metadataJson = metadata ? JSON.stringify(metadata) : null
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query(
+      `INSERT INTO system_audit_events
+        (actor_type, actor_id, action, entity_type, entity_id, ip_address, metadata_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       RETURNING id, created_at`,
+      [normalizedActorType, actorId, normalizedAction, entityType, entityId, ipAddress, metadataJson],
+    )
+    return { id: result.rows[0].id, createdAt: result.rows[0].created_at }
+  }
+
+  const db = ensureSqlite()
+  const result = db.prepare(
+    `INSERT INTO system_audit_events
+      (actor_type, actor_id, action, entity_type, entity_id, ip_address, metadata_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(normalizedActorType, actorId, normalizedAction, entityType, entityId, ipAddress, metadataJson)
+  return { id: result.lastInsertRowid, createdAt: new Date().toISOString() }
+}
+
+async function listAuditEvents(limit = 100) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 100, 500))
+  if (shouldUsePostgres()) {
+    const pool = await ensurePostgres()
+    const result = await pool.query('SELECT * FROM system_audit_events ORDER BY created_at DESC LIMIT $1', [safeLimit])
+    return result.rows.map(mapCrmRow)
+  }
+  return ensureSqlite().prepare('SELECT * FROM system_audit_events ORDER BY created_at DESC LIMIT ?').all(safeLimit).map(mapCrmRow)
+}
+
 async function backfillCrm({ apply = false } = {}) {
   const sources = await getCrmBackfillSources()
   const summary = {
@@ -3224,6 +3331,7 @@ module.exports = {
   createOrUpdateAdminUser,
   createCrmRecord,
   createPortalTicket,
+  createPortalTicketReply,
   createPortalUser,
   deleteCrmRecord,
   getCrmActivityByRequestId,
@@ -3238,7 +3346,9 @@ module.exports = {
   getStorageStatus,
   getRecentSubmissions,
   listAdminUsers,
+  listAuditEvents,
   listCrmRecords,
+  recordAuditEvent,
   storeSubmission,
   updateCrmRecord,
   updateAdminTicketStatus,

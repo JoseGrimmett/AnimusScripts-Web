@@ -225,14 +225,6 @@ const AdminCrmPage = () => {
     loadRecords(entity, null);
   }, [entity, loadRecords]);
 
-  const summary = useMemo(() => {
-    return ENTITY_ORDER.map((key) => ({
-      key,
-      label: ENTITY_CONFIG[key].label,
-      count: key === entity ? records.length : null,
-    }));
-  }, [entity, records.length]);
-
   const visibleRecords = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return records;
@@ -353,63 +345,39 @@ const AdminCrmPage = () => {
   return (
     <AdminShell user={session?.user}>
       <main className="container crm-main">
-        <section className="crm-hero card-raise">
-          <p className="section-kicker">Internal CRM</p>
-          <h1>Admin CRM workspace</h1>
-          <p>
-            Work the shared system of record for customers, contacts, leads, and tickets.
-          </p>
-
-          <div className="crm-summary">
-            {summary.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`crm-summary-card ${entity === item.key ? "active" : ""}`}
-                onClick={() => setEntity(item.key)}
-              >
-                <span>{item.label}</span>
-                <strong>{item.count ?? "—"}</strong>
-              </button>
-            ))}
+        <section className="crm-page-head">
+          <div>
+            <p className="section-kicker">CRM records</p>
+            <h1>Customers and work</h1>
+            <p>Find, review, and update the shared system of record.</p>
           </div>
-
-          <div className="crm-actions">
-            <button type="button" className="btn dark-btn" onClick={() => loadRecords(entity)} disabled={isLoading}>
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
-            <button type="button" className="btn ghost-btn" onClick={handleCreateNew}>
-              New {currentConfig.label.slice(0, -1)}
-            </button>
-            <a className="btn ghost-btn" href="/admin">
-              Ticket workspace
-            </a>
-          </div>
-
-          {session?.user?.username ? (
-            <p className="crm-meta">
-              Signed in as {session.user.username} ({session.user.role || "employee"})
-            </p>
-          ) : null}
+          <button type="button" className="btn dark-btn" onClick={handleCreateNew}>
+            New {currentConfig.label.slice(0, -1)}
+          </button>
         </section>
 
         {status ? <p className="crm-status" role="status" aria-live="polite">{status}</p> : null}
 
-        <section className="crm-tabs card-raise" aria-label="CRM entity tabs">
-          {ENTITY_ORDER.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={`crm-tab ${entity === item ? "active" : ""}`}
-              onClick={() => setEntity(item)}
-            >
-              {ENTITY_CONFIG[item].label}
-            </button>
-          ))}
+        <section className="crm-toolbar" aria-label="CRM controls">
+          <div className="crm-tabs" aria-label="CRM entity tabs">
+            {ENTITY_ORDER.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={`crm-tab ${entity === item ? "active" : ""}`}
+                onClick={() => setEntity(item)}
+              >
+                {ENTITY_CONFIG[item].label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="crm-refresh" onClick={() => loadRecords(entity)} disabled={isLoading}>
+            {isLoading ? "Refreshing…" : "Refresh"}
+          </button>
         </section>
 
         <div className="crm-grid">
-          <section className="crm-list-shell card-raise">
+          <section className="crm-list-shell">
             <div className="crm-section-head">
               <div>
                 <h2>{currentConfig.label}</h2>
@@ -463,7 +431,7 @@ const AdminCrmPage = () => {
             </div>
           </section>
 
-          <section className="crm-detail-shell card-raise">
+          <section className="crm-detail-shell">
             <div className="crm-section-head">
               <div>
                 <h2>{selectedRecord?.id ? `Edit ${currentConfig.label.slice(0, -1)}` : `New ${currentConfig.label.slice(0, -1)}`}</h2>

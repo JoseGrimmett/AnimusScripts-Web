@@ -10,6 +10,7 @@ const {
   handleAdminCrm,
   handleAdminCrmActions,
   handleAdminCrmActivity,
+  handleAdminDashboard,
 } = require('../../server/adminApi.cjs')
 
 export default async function handler(req, res) {
@@ -22,6 +23,10 @@ export default async function handler(req, res) {
 
   if (mode === 'activity') {
     return handleAdminCrmActivity(req, res)
+  }
+
+  if (mode === 'dashboard') {
+    return handleAdminDashboard(req, res)
   }
 
   return handleAdminCrm(req, res)

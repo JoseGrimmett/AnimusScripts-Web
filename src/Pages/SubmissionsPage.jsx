@@ -307,23 +307,6 @@ const SubmissionsPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/admin/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch {
-      // no-op
-    }
-
-    clearSession();
-    setPassword("");
-    setStatus("Signed out.");
-    emitAuthChanged();
-    emitToast({ message: "Signed out successfully.", type: "success" });
-  };
-
   const handleAssign = async () => {
     if (!selectedTicket?.requestId) {
       return;
@@ -596,10 +579,12 @@ const SubmissionsPage = () => {
     <AdminShell user={session?.user}>
       <main className="container submissions-main">
         <section className="submissions-hero">
-          <p className="section-kicker">Internal Admin</p>
-          <h1>Admin submissions dashboard</h1>
+          <p className="section-kicker">{session?.user ? "Ticket operations" : "Employee access"}</p>
+          <h1>{session?.user ? "Ticket inbox" : "Sign in to Animus Operations"}</h1>
           <p>
-            Sign in as an employee to work tickets, inspect detail timelines, and assign ownership.
+            {session?.user
+              ? "Review new requests, assign ownership, and keep customers updated."
+              : "Use your employee credentials or Microsoft 365 account."}
           </p>
           {!session?.user ? (
             <form className="submissions-unlock" onSubmit={handleLogin}>
@@ -648,17 +633,7 @@ const SubmissionsPage = () => {
             <button className="btn ghost-btn" onClick={handleExport} disabled={!tickets.length}>
               Export CSV
             </button>
-            {session?.user ? (
-              <button className="btn ghost-btn" type="button" onClick={handleLogout}>
-                Sign out
-              </button>
-            ) : null}
           </div>
-          {session?.user?.username ? (
-            <p className="submissions-meta">
-              Signed in as {session.user.username} ({session.user.role || "employee"})
-            </p>
-          ) : null}
           {latestUpdated ? (
             <p className="submissions-meta">Latest update: {formatDate(latestUpdated)}</p>
           ) : null}

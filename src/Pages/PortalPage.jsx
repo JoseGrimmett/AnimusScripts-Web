@@ -31,6 +31,8 @@ const PortalPage = () => {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isTicketsLoading, setIsTicketsLoading] = useState(false);
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+  const [replyMessage, setReplyMessage] = useState("");
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
   const loadSession = useCallback(async () => {
     try {
@@ -251,6 +253,33 @@ const PortalPage = () => {
     }
   };
 
+  const handleReply = async (event) => {
+    event.preventDefault();
+    if (!selectedTicket?.requestId || !replyMessage.trim()) return;
+
+    setIsSubmittingReply(true);
+    setStatus("Sending reply...");
+    try {
+      const response = await fetch("/api/portal/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ requestId: selectedTicket.requestId, reply: replyMessage }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Failed to send reply");
+
+      setReplyMessage("");
+      setSelectedTicket(payload.ticket);
+      setStatus("Reply added.");
+      emitToast({ message: "Reply added to the ticket.", type: "success" });
+    } catch (error) {
+      setStatus(error.message || "Failed to send reply");
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
+
   const signedInLabel = useMemo(() => {
     if (!user) {
       return null;
@@ -260,7 +289,7 @@ const PortalPage = () => {
   }, [user]);
 
   return (
-    <div className="site-shell">
+    <div className="site-shell portal-experience">
       <NavBar />
       <main className="container portal-main">
         <section className="portal-hero">
@@ -419,6 +448,25 @@ const PortalPage = () => {
                     </article>
                   ))}
                 </div>
+
+                <form className="portal-reply-form" onSubmit={handleReply}>
+                  <label htmlFor="portal-ticket-reply">Add a reply</label>
+                  <textarea
+                    id="portal-ticket-reply"
+                    value={replyMessage}
+                    onChange={(event) => setReplyMessage(event.target.value)}
+                    rows={4}
+                    maxLength={5000}
+                    placeholder="Share an update or answer a question..."
+                    required
+                  />
+                  <div className="portal-reply-actions">
+                    <small>{replyMessage.length}/5000</small>
+                    <button className="btn dark-btn" type="submit" disabled={isSubmittingReply || !replyMessage.trim()}>
+                      {isSubmittingReply ? "Sending..." : "Send reply"}
+                    </button>
+                  </div>
+                </form>
               </section>
             ) : null}
           </>

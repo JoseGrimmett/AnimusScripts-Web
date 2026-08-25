@@ -11,10 +11,12 @@ import AboutPage from './Pages/AboutPage.jsx';
 import ContactPage from './Pages/ContactPage.jsx';
 import SubmissionsPage from './Pages/SubmissionsPage.jsx';
 import AdminCrmPage from './Pages/AdminCrmPage.jsx';
+import AdminDashboardPage from './Pages/AdminDashboardPage.jsx';
 import PortalPage from './Pages/PortalPage.jsx';
 import EmployeeRouteGuard from './Components/RouteGuards/EmployeeRouteGuard.jsx';
 import ToastHost from './Components/ToastHost/ToastHost.jsx';
 import AnalyticsRouteTracker from './Components/AnalyticsRouteTracker/AnalyticsRouteTracker.jsx';
+import './styles/design-system.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -32,6 +34,14 @@ createRoot(document.getElementById('root')).render(
           element={(
             <EmployeeRouteGuard>
               <SubmissionsPage />
+            </EmployeeRouteGuard>
+          )}
+        />
+        <Route
+          path="/admin/dashboard"
+          element={(
+            <EmployeeRouteGuard>
+              <AdminDashboardPage />
             </EmployeeRouteGuard>
           )}
         />

@@ -1,0 +1,487 @@
+/* AnimusScripts 2026 interface system: premium public brand, customer portal, and staff operations. */
+:root {
+  --ink-950: #06101f;
+  --ink-900: #091629;
+  --ink-850: #0d1c31;
+  --ink-800: #13243a;
+  --ink-700: #253b54;
+  --paper-100: #f4f8fc;
+  --paper-200: #dce7f1;
+  --paper-300: #aec0d1;
+  --signal: #8fc4ea;
+  --signal-strong: #639fd0;
+  --signal-soft: rgba(143, 196, 234, .12);
+  --signal-ink: #326f9e;
+  --warning: #f2bc66;
+  --danger: #f47c75;
+  --line-dark: rgba(202, 220, 236, .14);
+  --line-light: rgba(20, 45, 70, .14);
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-low: 0 14px 40px rgba(0, 0, 0, .18);
+  --shadow-high: 0 28px 80px rgba(0, 0, 0, .3);
+  --container: 1240px;
+  color-scheme: light;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #edf3f8;
+  color: #10263b;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  letter-spacing: -.01em;
+}
+
+body::before { display: none; }
+
+::selection { background: var(--signal); color: var(--ink-950); }
+
+h1, h2, h3, h4, h5, h6,
+.nav-brand-name, .admin-brand-name {
+  color: inherit;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  letter-spacing: -.035em;
+}
+
+a { color: inherit; }
+
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
+}
+
+:where(button, input, textarea, select) { font: inherit; }
+
+:where(input, textarea, select) {
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: #10263b;
+}
+
+:where(input, textarea, select):focus {
+  border-color: rgba(143, 196, 234, .68);
+  box-shadow: 0 0 0 3px var(--signal-soft);
+}
+
+.container { width: min(var(--container), calc(100% - 48px)); }
+
+.site-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(20, 45, 70, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 45, 70, .035) 1px, transparent 1px),
+    #edf3f8;
+  background-size: 64px 64px;
+}
+
+/* Shared actions and surfaces */
+.btn, .dark-btn, .ghost-btn, .nav-cta, .portal-mode-toggle button,
+.admin-nav-link, .crm-action, .ticket-action, .submissions-action {
+  min-height: 42px;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  transition: border-color .18s ease, background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.btn::before { display: none !important; }
+
+.btn:hover, .dark-btn:hover, .ghost-btn:hover, .nav-cta:hover { transform: none !important; }
+
+.btn:not(.ghost-btn), .nav-cta {
+  border: 1px solid var(--signal) !important;
+  background: var(--signal) !important;
+  color: var(--ink-950) !important;
+  box-shadow: none !important;
+}
+
+.btn:not(.ghost-btn):hover, .nav-cta:hover { background: #a9d3f0 !important; }
+
+.ghost-btn {
+  border: 1px solid var(--line-light) !important;
+  background: rgba(255, 255, 255, .68) !important;
+  color: #10263b !important;
+  box-shadow: none !important;
+}
+
+:where(.card-raise, .info-card, .service-card, .process-card, .project-card-home,
+  .service-index-card, .project-card, .detail-card, .metric-card, .pricing-card,
+  .contact-card, .about-card, .about-panel, .engagement-card, .pricing-cta-card,
+  .ticket-table-shell, .ticket-detail-shell, .crm-list-shell, .crm-detail-shell,
+  .crm-action-card) {
+  border: 1px solid var(--line-light) !important;
+  border-radius: var(--radius-md) !important;
+  background: rgba(248, 251, 253, .94) !important;
+  box-shadow: 0 16px 44px rgba(20, 45, 70, .06) !important;
+  backdrop-filter: none !important;
+}
+
+:where(.card-raise, .info-card, .service-card, .process-card, .project-card-home,
+  .service-index-card, .project-card, .detail-card):hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(50, 111, 158, .3) !important;
+  box-shadow: 0 18px 48px rgba(20, 45, 70, .1) !important;
+}
+
+.section-kicker, .eyebrow, .page-kicker, .hero-kicker {
+  color: var(--signal-ink) !important;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: .73rem !important;
+  font-weight: 700;
+  letter-spacing: .15em !important;
+  text-transform: uppercase;
+}
+.service-icon, .service-link, .detail-back-link, .ops-panel-head a,
+.admin-app-shell a:not(.btn):not(.admin-nav-link) { color: var(--signal) !important; }
+
+/* Public navigation */
+.navbar {
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 1000;
+  width: 100% !important;
+  min-height: 68px;
+  padding: 10px max(24px, calc((100vw - var(--container)) / 2)) !important;
+  transform: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-light) !important;
+  border-radius: 0 !important;
+  background: rgba(247, 250, 253, .94) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+.nav-brand { gap: 11px !important; }
+.nav-brand span { font-size: .96rem !important; font-weight: 700; letter-spacing: -.015em !important; }
+.nav-brand span { color: #10263b !important; }
+.nav-brand small { color: #5e7285 !important; font-size: .66rem !important; }
+
+.logo {
+  width: 42px !important;
+  height: 42px !important;
+  animation: none !important;
+  filter: saturate(.75) contrast(1.08) !important;
+}
+
+.nav-links { gap: 4px !important; }
+.nav-links a, .nav-menu-button {
+  border-radius: var(--radius-xs) !important;
+  color: #405b72 !important;
+  font-size: .86rem !important;
+}
+.navbar .utility-message { display: none; }
+.navbar .utility-auth-link {
+  padding: .44rem .68rem;
+  border-color: var(--line-light);
+  background: rgba(255, 255, 255, .72);
+  color: #405b72;
+  font-size: .75rem;
+}
+.navbar .utility-auth-link[href="/api/admin/microsoft/start"] { display: none; }
+.nav-links a:hover, .nav-menu-button:hover, .nav-links a.active, .nav-links a.nav-active {
+  background: rgba(20, 45, 70, .065) !important;
+  color: #10263b !important;
+  border-color: transparent !important;
+}
+.nav-links a.nav-cta,
+.nav-links a.nav-cta:hover,
+.nav-links a.nav-cta.nav-active { background: var(--signal) !important; color: var(--ink-950) !important; }
+.nav-dropdown {
+  border: 1px solid var(--line-light) !important;
+  border-radius: var(--radius-sm) !important;
+  background: #f8fbfd !important;
+  box-shadow: var(--shadow-high) !important;
+}
+
+/* Public home and marketing pages */
+.site-shell main :where(h1, h2, h3, h4) { color: #10263b !important; }
+.site-shell main p { color: #5a6f82; }
+.home-hero { min-height: min(760px, 100svh); padding: clamp(116px, 15vh, 148px) 0 64px !important; }
+.page-hero, .detail-hero { padding-top: clamp(116px, 14vh, 148px) !important; }
+.home-hero::before, .home-hero::after, .page-hero::before, .detail-hero::before { opacity: .34 !important; }
+.home-hero h1 {
+  max-width: 780px;
+  font-size: clamp(3rem, min(5.25vw, 9.5vh), 5.6rem) !important;
+  line-height: .98 !important;
+  text-wrap: balance;
+}
+.page-hero h1 { max-width: 880px; font-size: clamp(2.8rem, 5vw, 4.7rem) !important; line-height: 1 !important; text-wrap: balance; }
+.detail-hero h1 { max-width: 880px; font-size: clamp(2.7rem, 4.6vw, 4.35rem) !important; line-height: 1.02 !important; text-wrap: balance; }
+.home-hero-copy, .page-hero-copy, .detail-hero-copy {
+  color: #5a6f82 !important;
+  font-size: clamp(1.02rem, 1.5vw, 1.25rem) !important;
+  line-height: 1.7 !important;
+}
+.home-hero-grid { grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr) !important; gap: clamp(40px, 5vw, 76px) !important; }
+.system-visual {
+  min-height: clamp(300px, 42vh, 390px) !important;
+  overflow: hidden;
+  border: 1px solid rgba(20, 45, 70, .14) !important;
+  border-radius: var(--radius-lg) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(222, 235, 245, .82)) !important;
+  box-shadow: 0 24px 70px rgba(20, 45, 70, .11) !important;
+}
+.system-node {
+  border-color: rgba(50, 111, 158, .32) !important;
+  border-radius: var(--radius-sm) !important;
+  background: #f7fbfe !important;
+  color: #234861 !important;
+}
+.system-link { border-color: rgba(50, 111, 158, .35) !important; }
+.home-section, .page-section { padding-block: clamp(72px, 9vw, 128px) !important; }
+.section-head { margin-bottom: clamp(32px, 5vw, 64px) !important; }
+.section-head h2 { font-size: clamp(2.1rem, 4.5vw, 4.3rem) !important; line-height: 1 !important; }
+.info-grid, .services-grid, .project-grid, .process-grid { gap: 16px !important; }
+.info-card, .service-card, .process-card, .project-card-home { padding: clamp(24px, 3vw, 38px) !important; }
+.tech-badge, .brand-pill, .status-pill, .ticket-status {
+  border: 1px solid var(--line-light) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: #486278 !important;
+}
+.final-cta, .page-cta {
+  border-block: 1px solid var(--line-light) !important;
+  border-radius: 0 !important;
+  background: #e5eef5 !important;
+  box-shadow: none !important;
+}
+.pricing-hero {
+  min-height: 56vh !important;
+  padding-top: 132px !important;
+  border-bottom: 1px solid var(--line-light) !important;
+  background: linear-gradient(180deg, rgba(143, 196, 234, .055), transparent) !important;
+}
+.pricing-hero h1 { font-size: clamp(3rem, 7vw, 6rem) !important; line-height: .96 !important; }
+.pricing-tiers, .engagement-models, .pricing-comparison-section, .pricing-faq,
+.pricing-roi, .pricing-lead-capture { padding-block: clamp(64px, 8vw, 112px) !important; }
+.pricing-grid, .engagement-grid { gap: 16px !important; }
+.pricing-card, .engagement-card, .pricing-cta-card {
+  border: 1px solid var(--line-light) !important;
+  border-radius: var(--radius-md) !important;
+  background: #f8fbfd !important;
+  box-shadow: 0 16px 44px rgba(20, 45, 70, .06) !important;
+}
+.pricing-card.is-primary { transform: none !important; border-color: rgba(143, 196, 234, .5) !important; }
+.pricing-card.is-primary::before { background: var(--signal) !important; color: var(--ink-950) !important; }
+.pricing-amount, .pricing-check, .engagement-check { color: var(--signal) !important; }
+.faq-toggle { border-color: var(--line-light) !important; background: #f8fbfd !important; color: #10263b !important; }
+.service-pill { border-color: var(--line-dark) !important; background: var(--signal-soft) !important; color: var(--signal) !important; }
+.about-panel, .contact-page-main > * { border-color: var(--line-light) !important; }
+.contact-col { color: #5a6f82 !important; }
+.contact-col :where(h3, strong) { color: #10263b !important; }
+.contact-col :where(p, span) { color: #5a6f82 !important; }
+.contact-highlights div, .contact-steps div, .form-panel {
+  border: 1px solid var(--line-light) !important;
+  border-radius: var(--radius-md) !important;
+  background: rgba(248, 251, 253, .94) !important;
+  box-shadow: 0 16px 44px rgba(20, 45, 70, .06) !important;
+  backdrop-filter: none !important;
+}
+.contact form :where(input, textarea, select) {
+  border-color: var(--line-light) !important;
+  background: #ffffff !important;
+  color: #10263b !important;
+}
+.contact form :where(input, textarea)::placeholder { color: #8295a5 !important; }
+.contact form label { color: #29485f !important; }
+.footer {
+  border-top: 1px solid var(--line-dark) !important;
+  background: #040b16 !important;
+}
+
+/* Customer experience: deliberately warmer and more spacious than staff tools. */
+.portal-experience {
+  color-scheme: light;
+  background: #edf3f8 !important;
+  color: #10263b;
+}
+.portal-experience .navbar {
+  border-bottom-color: var(--line-light) !important;
+  background: rgba(247, 250, 253, .94) !important;
+}
+.portal-experience .nav-brand-name,
+.portal-experience .nav-links a,
+.portal-experience .nav-menu-button { color: #10263b !important; }
+.portal-experience .nav-brand-tagline { color: #5e7285 !important; }
+.portal-experience .nav-links a:hover,
+.portal-experience .nav-menu-button:hover { background: rgba(16, 38, 59, .06) !important; }
+.portal-experience .nav-dropdown { background: #f8fbfd !important; border-color: var(--line-light) !important; }
+.portal-experience .portal-main { padding-top: 116px !important; }
+.portal-experience .portal-hero h1 { color: #0d1c31 !important; font-size: clamp(2.6rem, 5vw, 4.8rem) !important; }
+.portal-experience .portal-hero p,
+.portal-experience .portal-status { color: #5a6f82 !important; }
+.portal-experience .portal-signed-in { color: #32678f !important; }
+.portal-experience :where(.portal-auth, .portal-ticket-create, .portal-ticket,
+  .portal-ticket-detail, .portal-timeline-item) :where(h2, h3, strong, label) { color: #10263b !important; }
+.portal-experience :where(.portal-ticket p, .portal-ticket-detail-message,
+  .portal-timeline-item p, .portal-ticket-meta, .portal-timeline-item-head span,
+  .portal-reply-actions small) { color: #5a6f82 !important; }
+.portal-experience :where(.portal-auth, .portal-ticket-create, .portal-ticket,
+  .portal-ticket-detail, .portal-timeline-item, .portal-form, .portal-panel) {
+  border: 1px solid var(--line-light) !important;
+  border-radius: var(--radius-md) !important;
+  background: #f8fbfd !important;
+  color: #10263b !important;
+  box-shadow: 0 18px 48px rgba(20, 45, 70, .08) !important;
+}
+.portal-experience :where(input, textarea, select) {
+  border-color: var(--line-light);
+  background: #ffffff;
+  color: #10263b;
+}
+.portal-experience .ghost-btn,
+.portal-experience .dark-btn {
+  border-color: var(--line-light) !important;
+  background: rgba(16, 38, 59, .04) !important;
+  color: #10263b !important;
+}
+.portal-experience .ticket-status { border-color: var(--line-light) !important; color: #486278 !important; }
+.portal-experience .footer { border-top-color: var(--line-light) !important; background: #091629 !important; color: var(--paper-100); }
+
+/* Staff operations workspace: denser, high-signal, and visually separate. */
+.admin-app-shell {
+  --admin-panel: #0d1c31;
+  --admin-panel-raised: #13243a;
+  min-height: 100vh;
+  background: #06101f !important;
+  color: var(--paper-100);
+  color-scheme: dark;
+}
+.admin-app-shell .section-kicker { color: var(--signal) !important; }
+.admin-app-shell .ghost-btn {
+  border-color: var(--line-dark) !important;
+  background: rgba(255, 255, 255, .045) !important;
+  color: var(--paper-100) !important;
+}
+.admin-sidebar {
+  border-right: 1px solid var(--line-dark) !important;
+  background: #081426 !important;
+  box-shadow: none !important;
+}
+.admin-brand-mark { border-radius: var(--radius-sm) !important; background: var(--signal) !important; color: var(--ink-950) !important; }
+.admin-nav-link { color: var(--paper-300) !important; }
+.admin-nav-link:hover { background: rgba(255, 255, 255, .045) !important; color: var(--paper-100) !important; }
+.admin-nav-link.active, .admin-nav-link[aria-current="page"] {
+  background: var(--signal-soft) !important;
+  color: var(--signal) !important;
+  box-shadow: inset 3px 0 var(--signal);
+}
+.admin-app-content { background: transparent !important; }
+.admin-topbar, .ops-toolbar, .crm-toolbar, .submissions-toolbar {
+  border-color: var(--line-dark) !important;
+  background: rgba(6, 16, 31, .9) !important;
+  backdrop-filter: blur(16px);
+}
+:where(.ops-metric, .ops-kpi, .ops-panel, .crm-panel, .crm-contact-card, .crm-detail,
+  .crm-list-shell, .crm-detail-shell, .submissions-panel, .ticket-card, .ticket-detail,
+  .ticket-table-shell, .ticket-detail-shell, .audit-card, .user-admin-shell, .crm-action-card) {
+  border: 1px solid var(--line-dark) !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--admin-panel) !important;
+  box-shadow: none !important;
+}
+:where(.ops-metric, .ops-kpi, .crm-contact-card, .ticket-card):hover {
+  border-color: rgba(143, 196, 234, .3) !important;
+  background: var(--admin-panel-raised) !important;
+}
+.ops-metric-value, .crm-stat-value { color: var(--paper-100) !important; font-variant-numeric: tabular-nums; }
+.ops-metric-label, .crm-stat-label, .admin-muted { color: #95a198 !important; }
+.ops-badge, .crm-badge, .submissions-badge {
+  border-radius: var(--radius-xs) !important;
+  background: var(--signal-soft) !important;
+  color: var(--signal) !important;
+}
+.ops-kpi-primary {
+  border-color: rgba(143, 196, 234, .3) !important;
+  background: linear-gradient(145deg, #15324d, #0e2238) !important;
+}
+.ops-kpi-primary > span, .ops-kpi-primary small { color: #b6cde0 !important; }
+.ops-dot-in-progress, .ops-ticket-state.state-in-progress { background: var(--signal-strong) !important; }
+.ops-bar span { background: var(--signal-strong) !important; }
+.ops-activity-icon { background: var(--signal-soft) !important; color: var(--signal) !important; }
+.ops-ticket-row:hover strong { color: var(--signal) !important; }
+.ops-dashboard-status, .crm-status, .submissions-status, .portal-status {
+  min-height: 44px;
+  border-radius: var(--radius-sm) !important;
+}
+.admin-app-shell :where(.crm-input, .submissions-input, input, textarea, select) {
+  border-color: var(--line-dark) !important;
+  border-radius: var(--radius-xs) !important;
+  background: #091629 !important;
+  color: var(--paper-100) !important;
+}
+.admin-app-shell :where(table, .crm-table, .ticket-table) { border-collapse: collapse; }
+.admin-app-shell :where(th) {
+  color: #95a198 !important;
+  font-size: .7rem !important;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.admin-app-shell :where(td, th) { border-bottom-color: var(--line-dark) !important; }
+.admin-app-shell :where(.crm-tabs button, .crm-refresh, .admin-signout, .admin-public-link) {
+  border-radius: var(--radius-xs) !important;
+}
+
+/* Responsive and accessibility pass */
+@media (max-width: 980px) {
+  .container { width: min(100% - 32px, var(--container)); }
+  .navbar { padding-inline: 16px !important; }
+  .home-hero { min-height: auto; padding-top: 120px !important; }
+  .home-hero-grid { grid-template-columns: 1fr !important; }
+  .system-visual { max-width: 680px; }
+  .admin-app-content { min-width: 0; }
+}
+
+@media (max-width: 1180px) {
+  .navbar .nav-utility { display: none; }
+  .navbar { grid-template-columns: auto minmax(0, 1fr) !important; }
+}
+
+@media (max-width: 900px) and (min-width: 841px) {
+  .nav-brand small { display: none; }
+  .nav-links a { padding-inline: .58rem !important; font-size: .8rem !important; }
+}
+
+@media (max-width: 840px) {
+  .navbar .nav-links {
+    border-left-color: var(--line-light) !important;
+    background: rgba(247, 250, 253, .98) !important;
+  }
+  .navbar .nav-links a { color: #29485f !important; }
+  .navbar .nav-links a:hover, .navbar .nav-links a.nav-active {
+    background: rgba(20, 45, 70, .065) !important;
+    color: #10263b !important;
+  }
+  .navbar .nav-links a.nav-cta { background: var(--signal) !important; color: var(--ink-950) !important; }
+  .navbar .menu-icon span { background: #10263b !important; }
+}
+
+@media (max-width: 720px) {
+  .container { width: min(100% - 24px, var(--container)); }
+  .navbar { min-height: 64px; }
+  .logo { width: 38px !important; height: 38px !important; }
+  .home-hero, .page-hero, .detail-hero { padding-top: 104px !important; }
+  .home-hero h1, .page-hero h1, .detail-hero h1 { font-size: clamp(2.6rem, 14vw, 4.4rem) !important; }
+  .home-section, .page-section { padding-block: 64px !important; }
+  .info-grid, .services-grid, .project-grid, .process-grid { grid-template-columns: 1fr !important; }
+  .portal-experience .portal-main { padding-top: 96px !important; }
+  .admin-sidebar { border-right: 0 !important; border-bottom: 1px solid var(--line-dark) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(.card-raise, .info-card, .service-card, .portal-ticket, .ops-panel, .crm-panel) { border: 1px solid CanvasText !important; }
+}

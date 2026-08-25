@@ -19,7 +19,9 @@ const {
   findCrmTicketByRequestId,
   getCrmRecord,
   listAdminUsers,
+  listAuditEvents,
   listCrmRecords,
+  recordAuditEvent,
   getRecentSubmissions,
   deleteCrmRecord,
   updateCrmRecord,
@@ -62,6 +64,20 @@ function getRequestHeader(req, name) {
   }
 
   return req.headers?.[lowerName] || req.headers?.[name] || null
+}
+
+function getClientIp(req) {
+  return String(getRequestHeader(req, 'x-forwarded-for') || req.socket?.remoteAddress || '')
+    .split(',')[0]
+    .trim() || null
+}
+
+async function writeAuditSafely(event) {
+  try {
+    await recordAuditEvent(event)
+  } catch (error) {
+    console.error('[audit] failed to record event', { action: event.action, error: error.message })
+  }
 }
 
 function getBearerToken(req) {
@@ -204,6 +220,12 @@ async function handleAdminLogin(req, res) {
   const user = await verifyAdminCredentials(username, password)
 
   if (!user) {
+    await writeAuditSafely({
+      actorType: 'staff',
+      actorId: String(username || '').trim().toLowerCase() || null,
+      action: 'admin_login_failed',
+      ipAddress: getClientIp(req),
+    })
     return sendJson(res, 401, { error: 'Invalid credentials' })
   }
 
@@ -217,6 +239,15 @@ async function handleAdminLogin(req, res) {
   }
 
   setSessionCookie(res, token)
+  await writeAuditSafely({
+    actorType: 'staff',
+    actorId: user.username,
+    action: 'admin_login_succeeded',
+    entityType: 'admin_user',
+    entityId: String(user.id),
+    ipAddress: getClientIp(req),
+    metadata: { role: user.role || 'employee' },
+  })
 
   return sendJson(res, 200, {
     ok: true,
@@ -340,6 +371,12 @@ async function handleAdminTickets(req, res) {
     if (payload.action === 'status') {
       const statusUpdate = await updateAdminTicketStatus(payload.requestId, payload.status, session.username, payload.note)
 
+      await writeAuditSafely({
+        actorType: 'staff', actorId: session.username, action: 'ticket_status_changed',
+        entityType: 'ticket', entityId: payload.requestId, ipAddress: getClientIp(req),
+        metadata: { status: statusUpdate.status, note: payload.note || null },
+      })
+
       return sendJson(res, 200, {
         ok: true,
         statusUpdate,
@@ -347,6 +384,12 @@ async function handleAdminTickets(req, res) {
     }
 
     const assignment = await assignAdminTicket(payload.requestId, payload.assignedTo, session.username)
+
+    await writeAuditSafely({
+      actorType: 'staff', actorId: session.username, action: 'ticket_assignment_changed',
+      entityType: 'ticket', entityId: payload.requestId, ipAddress: getClientIp(req),
+      metadata: { assignedTo: assignment.assignedTo },
+    })
 
     return sendJson(res, 200, {
       ok: true,
@@ -387,6 +430,12 @@ async function handleAdminUsers(req, res) {
 
     const payload = parseBody(req.body)
     const user = await createOrUpdateAdminUser(payload.username, payload.password, payload.role)
+
+    await writeAuditSafely({
+      actorType: 'staff', actorId: session.username, action: 'admin_user_upserted',
+      entityType: 'admin_user', entityId: String(user.id), ipAddress: getClientIp(req),
+      metadata: { username: user.username, role: user.role },
+    })
 
     return sendJson(res, 200, {
       ok: true,
@@ -602,6 +651,54 @@ async function handleAdminCrmActivity(req, res) {
   })
 }
 
+async function handleAdminDashboard(req, res) {
+  const session = getAdminSession(req)
+  if (!session) return sendJson(res, 401, { error: 'Unauthorized' })
+  if (!hasEmployeeAccess(session)) return sendJson(res, 403, { error: 'Employee access is required' })
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET')
+    return sendJson(res, 405, { error: 'Method not allowed' })
+  }
+
+  const [organizations, contacts, leads, crmTickets, inboxTickets, auditEvents] = await Promise.all([
+    listCrmRecords('organizations', 500),
+    listCrmRecords('contacts', 500),
+    listCrmRecords('leads', 500),
+    listCrmRecords('tickets', 500),
+    getAdminTickets(100),
+    listAuditEvents(12),
+  ])
+
+  const statuses = { received: 0, open: 0, 'in-progress': 0, waiting: 0, resolved: 0 }
+  inboxTickets.forEach((ticket) => {
+    const status = String(ticket.status || 'open').toLowerCase()
+    statuses[status] = (statuses[status] || 0) + 1
+  })
+  const unassigned = inboxTickets.filter((ticket) => !ticket.assignedTo).length
+  const now = Date.now()
+  const newLast7Days = inboxTickets.filter((ticket) => {
+    const created = new Date(ticket.createdAt).getTime()
+    return Number.isFinite(created) && now - created <= 7 * 24 * 60 * 60 * 1000
+  }).length
+
+  return sendJson(res, 200, {
+    ok: true,
+    metrics: {
+      organizations: organizations.length,
+      contacts: contacts.length,
+      leads: leads.length,
+      tickets: crmTickets.length,
+      inbox: inboxTickets.length,
+      unassigned,
+      newLast7Days,
+      active: (statuses.received || 0) + (statuses.open || 0) + (statuses['in-progress'] || 0) + (statuses.waiting || 0),
+    },
+    statuses,
+    recentTickets: inboxTickets.slice(0, 6),
+    activity: auditEvents,
+  })
+}
+
 async function handleMicrosoftStart(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -770,5 +867,6 @@ module.exports = {
   handleAdminCrm,
   handleAdminCrmActions,
   handleAdminCrmActivity,
+  handleAdminDashboard,
   handleAdminSubmissions,
 }

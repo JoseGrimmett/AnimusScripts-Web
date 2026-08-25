@@ -42,7 +42,7 @@ The initial production backfill was completed on August 22, 2026.
 
 The test suite uses disposable SQLite databases and covers CRM synchronization, repeatable
 backfills, portal customer isolation, staff status/assignment updates, customer-visible timelines,
-and administrator-only user creation.
+customer replies, durable staff audit events, and administrator-only user creation.
 
 ## Routing
 
@@ -56,6 +56,8 @@ Main routes currently include:
 - `/contact`
 - `/pricing`
 - `/admin`
+- `/admin/dashboard`
+- `/admin/crm`
 - `/submissions`
 - `/portal`
 
@@ -126,6 +128,13 @@ The client portal page at `/portal` supports:
 
 Portal sessions use a signed HTTP-only cookie and per-user ticket filtering by account email.
 Portal signup/login includes in-memory request throttling with temporary lockout to reduce brute-force attempts.
+Customers can add replies to tickets they own; replies appear in the same timeline used by staff.
+
+Sensitive staff actions are written to `system_audit_events`, including authentication outcomes,
+ticket status and ownership changes, and staff-user administration.
+
+The staff overview at `/admin/dashboard` summarizes active and unassigned work, seven-day intake,
+CRM coverage, ticket health, recent requests, and the durable audit stream.
 
 Optional portal auth throttling configuration:
 

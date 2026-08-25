@@ -1,5 +1,6 @@
 const {
   createPortalTicket,
+  createPortalTicketReply,
   createPortalUser,
   getPortalTicketDetailByEmail,
   getPortalTicketsByEmail,
@@ -367,6 +368,27 @@ async function handlePortalTickets(req, res) {
 
   if (req.method === 'POST') {
     const payload = parseBody(req.body)
+
+    if (payload.requestId) {
+      const replyMessage = String(payload.reply || payload.message || '').trim()
+      if (!replyMessage) {
+        return sendJson(res, 400, { error: 'Reply message is required' })
+      }
+      if (replyMessage.length > 5000) {
+        return sendJson(res, 400, { error: 'Reply must be 5000 characters or less' })
+      }
+
+      const ticket = await createPortalTicketReply({
+        email: session.email,
+        requestId: payload.requestId,
+        message: replyMessage,
+      })
+      if (!ticket) {
+        return sendJson(res, 404, { error: 'Ticket not found' })
+      }
+      return sendJson(res, 201, { ok: true, ticket })
+    }
+
     const subject = String(payload.subject || '').trim()
     const message = String(payload.message || '').trim()
 

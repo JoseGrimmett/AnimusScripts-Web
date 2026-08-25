@@ -10,7 +10,7 @@ This is the practical build order for moving from the current site into a workin
 - Production backfill was applied successfully: 2 submissions, 4 portal users, and 4 portal tickets now map to CRM records.
 - Production integrity checks found 0 orphaned relationships, 0 duplicate source mappings, and 0 duplicate activity events.
 - Disposable-database integration coverage now verifies portal tenant isolation, staff ticket processing, CRM status/ownership synchronization, customer timeline visibility, and admin-only user creation.
-- Staff workflow validation, analytics, permissions/audit hardening, search/reporting, and production end-to-end testing remain open.
+- Customer replies, staff workflow validation, analytics foundations, and core audit logging are implemented. Granular roles, audit reporting UI, search/reporting, and production end-to-end testing remain open.
 
 ## Stage 0: Lock the scope
 
@@ -103,7 +103,7 @@ This is the practical build order for moving from the current site into a workin
 - [x] Let customers see ticket status.
 - [x] Let customers view timelines.
 - [x] Let customers create requests.
-- [ ] Let customers update existing requests or add replies.
+- [x] Let customers update existing requests or add replies.
 - [x] Keep portal access restricted to the owning account.
 
 ### Output
@@ -114,8 +114,9 @@ This is the practical build order for moving from the current site into a workin
 ## Stage 7: Add permissions and auditability
 
 - [x] Separate staff and customer access.
-- Record login events.
-- Record updates to sensitive fields.
+- [x] Record employee login success and failure events.
+- [x] Record ticket status, assignment, and staff-user changes.
+- [ ] Add an administrator audit-log viewer and filters.
 - [x] Restrict staff-user creation to administrators.
 - [ ] Restrict who can change ownership, billing, or status fields with granular roles.
 
@@ -129,8 +130,9 @@ This is the practical build order for moving from the current site into a workin
 
 - Search by name, company, email, status, and owner.
 - Filter by source, date, and stage.
-- Track response time.
-- Track open vs closed counts.
+- [ ] Track response time.
+- [x] Track open, active, waiting, resolved, unassigned, and seven-day intake counts.
+- [x] Add an operations overview with CRM coverage, recent requests, and audit activity.
 
 ### Output
 

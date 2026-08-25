@@ -185,6 +185,19 @@
   font-size: 0.84rem;
 }
 
+.portal-reply-form {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.portal-reply-form label { color: #eef6ff; font-weight: 700; }
+.portal-reply-form textarea { width: 100%; padding: 0.85rem 0.9rem; border-radius: 0.8rem; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(5, 12, 24, 0.75); color: #eef6ff; resize: vertical; }
+.portal-reply-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.portal-reply-actions small { color: rgba(219, 233, 246, 0.6); }
+
 .ticket-status {
   text-transform: uppercase;
   font-size: 0.72rem;

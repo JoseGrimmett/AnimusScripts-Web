@@ -4,8 +4,8 @@
 }
 
 .submissions-hero {
-  max-width: 860px;
-  margin-bottom: 1.5rem;
+  max-width: 760px;
+  margin-bottom: 1.1rem;
 }
 
 .section-kicker {
@@ -18,7 +18,7 @@
 }
 
 .submissions-hero h1 {
-  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin-bottom: 0.9rem;
@@ -26,14 +26,14 @@
 
 .submissions-hero p {
   color: rgba(248, 250, 252, 0.78);
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .submissions-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.2rem;
+  margin-top: 0.9rem;
 }
 
 .submissions-unlock {
@@ -95,10 +95,10 @@
 .ticket-detail-shell,
 .user-admin-shell {
   padding: 1.2rem;
-  border-radius: 1rem;
+  border-radius: 0.8rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #111b2b;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
 }
 
 .ticket-table-wrap {
