@@ -342,44 +342,48 @@ a { color: inherit; }
 .portal-experience .ticket-status { border-color: var(--line-light) !important; color: #486278 !important; }
 .portal-experience .footer { border-top-color: var(--line-light) !important; background: #091629 !important; color: var(--paper-100); }
 
-/* Staff operations workspace: denser, high-signal, and visually separate. */
+/* Staff operations workspace: the same calm, high-contrast light theme as the public site. */
 .admin-app-shell {
-  --admin-panel: #0d1c31;
-  --admin-panel-raised: #13243a;
+  --admin-panel: #f8fbfd;
+  --admin-panel-raised: #ffffff;
   min-height: 100vh;
-  background: #06101f !important;
-  color: var(--paper-100);
-  color-scheme: dark;
+  background:
+    linear-gradient(rgba(20, 45, 70, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 45, 70, .035) 1px, transparent 1px),
+    #edf3f8 !important;
+  background-size: 64px 64px !important;
+  color: #10263b;
+  color-scheme: light;
 }
-.admin-app-shell .section-kicker { color: var(--signal) !important; }
+.admin-app-shell .section-kicker { color: var(--signal-ink) !important; }
 .admin-app-shell .ghost-btn {
-  border-color: var(--line-dark) !important;
-  background: rgba(255, 255, 255, .045) !important;
-  color: var(--paper-100) !important;
+  border-color: var(--line-light) !important;
+  background: rgba(255, 255, 255, .76) !important;
+  color: #173a55 !important;
 }
 .admin-sidebar {
-  border-right: 1px solid var(--line-dark) !important;
-  background: #081426 !important;
+  border-right: 1px solid var(--line-light) !important;
+  background: rgba(247, 250, 253, .96) !important;
   box-shadow: none !important;
 }
 .admin-brand-mark { border-radius: var(--radius-sm) !important; background: var(--signal) !important; color: var(--ink-950) !important; }
-.admin-nav-link { color: var(--paper-300) !important; }
-.admin-nav-link:hover { background: rgba(255, 255, 255, .045) !important; color: var(--paper-100) !important; }
+.admin-nav-link { color: #486278 !important; }
+.admin-nav-link:hover { background: rgba(20, 45, 70, .055) !important; color: #10263b !important; }
 .admin-nav-link.active, .admin-nav-link[aria-current="page"] {
-  background: var(--signal-soft) !important;
-  color: var(--signal) !important;
-  box-shadow: inset 3px 0 var(--signal);
+  background: rgba(143, 196, 234, .2) !important;
+  color: #245c86 !important;
+  box-shadow: inset 3px 0 var(--signal-strong);
 }
 .admin-app-content { background: transparent !important; }
 .admin-topbar, .ops-toolbar, .crm-toolbar, .submissions-toolbar {
-  border-color: var(--line-dark) !important;
-  background: rgba(6, 16, 31, .9) !important;
+  border-color: var(--line-light) !important;
+  background: rgba(247, 250, 253, .9) !important;
   backdrop-filter: blur(16px);
 }
 :where(.ops-metric, .ops-kpi, .ops-panel, .crm-panel, .crm-contact-card, .crm-detail,
   .crm-list-shell, .crm-detail-shell, .submissions-panel, .ticket-card, .ticket-detail,
   .ticket-table-shell, .ticket-detail-shell, .audit-card, .user-admin-shell, .crm-action-card) {
-  border: 1px solid var(--line-dark) !important;
+  border: 1px solid var(--line-light) !important;
   border-radius: var(--radius-sm) !important;
   background: var(--admin-panel) !important;
   box-shadow: none !important;
@@ -388,18 +392,18 @@ a { color: inherit; }
   border-color: rgba(143, 196, 234, .3) !important;
   background: var(--admin-panel-raised) !important;
 }
-.ops-metric-value, .crm-stat-value { color: var(--paper-100) !important; font-variant-numeric: tabular-nums; }
-.ops-metric-label, .crm-stat-label, .admin-muted { color: #95a198 !important; }
+.ops-metric-value, .crm-stat-value { color: #10263b !important; font-variant-numeric: tabular-nums; }
+.ops-metric-label, .crm-stat-label, .admin-muted { color: #61788b !important; }
 .ops-badge, .crm-badge, .submissions-badge {
   border-radius: var(--radius-xs) !important;
   background: var(--signal-soft) !important;
-  color: var(--signal) !important;
+  color: #326f9e !important;
 }
 .ops-kpi-primary {
-  border-color: rgba(143, 196, 234, .3) !important;
-  background: linear-gradient(145deg, #15324d, #0e2238) !important;
+  border-color: rgba(50, 111, 158, .26) !important;
+  background: linear-gradient(145deg, #dcebf5, #eef6fb) !important;
 }
-.ops-kpi-primary > span, .ops-kpi-primary small { color: #b6cde0 !important; }
+.ops-kpi-primary > span, .ops-kpi-primary small { color: #486278 !important; }
 .ops-dot-in-progress, .ops-ticket-state.state-in-progress { background: var(--signal-strong) !important; }
 .ops-bar span { background: var(--signal-strong) !important; }
 .ops-activity-icon { background: var(--signal-soft) !important; color: var(--signal) !important; }
@@ -409,11 +413,12 @@ a { color: inherit; }
   border-radius: var(--radius-sm) !important;
 }
 .admin-app-shell :where(.crm-input, .submissions-input, input, textarea, select) {
-  border-color: var(--line-dark) !important;
+  border-color: var(--line-light) !important;
   border-radius: var(--radius-xs) !important;
-  background: #091629 !important;
-  color: var(--paper-100) !important;
+  background: #ffffff !important;
+  color: #10263b !important;
 }
+.admin-app-shell :where(input, textarea)::placeholder { color: #8295a5 !important; }
 .admin-app-shell :where(table, .crm-table, .ticket-table) { border-collapse: collapse; }
 .admin-app-shell :where(th) {
   color: #95a198 !important;
@@ -421,9 +426,51 @@ a { color: inherit; }
   letter-spacing: .09em;
   text-transform: uppercase;
 }
-.admin-app-shell :where(td, th) { border-bottom-color: var(--line-dark) !important; }
+.admin-app-shell :where(td, th) { border-bottom-color: var(--line-light) !important; }
 .admin-app-shell :where(.crm-tabs button, .crm-refresh, .admin-signout, .admin-public-link) {
   border-radius: var(--radius-xs) !important;
+}
+
+/* Normalize the legacy dark workspace details to the shared light palette. */
+.admin-app-shell :where(h1, h2, h3, h4, strong) { color: #10263b !important; }
+.admin-app-shell :where(p, small, time, label, .submissions-meta, .ticket-queue-preview,
+  .ticket-queue-meta, .ticket-detail-id, .crm-section-head p, .crm-search small,
+  .crm-field span, .ops-ticket-status, .ops-empty) { color: #5a6f82 !important; }
+.admin-app-shell :where(.admin-brand div > span, .admin-nav-section-label,
+  .admin-sidebar-footer > p, .admin-user-card div span) { color: #667b8e !important; }
+.admin-app-shell :where(.admin-user-avatar, .ops-activity-icon) {
+  background: rgba(143, 196, 234, .22) !important;
+  color: #245c86 !important;
+}
+.admin-app-shell :where(.admin-public-link, .admin-signout) { color: #486278 !important; }
+.admin-app-shell .admin-signout { border-color: var(--line-light) !important; background: #fff !important; }
+.admin-app-shell :where(.crm-grid, .ticket-queue-shell, .ticket-detail-shell,
+  .ticket-workflow-controls, .ticket-control-card, .crm-action-card, .user-chip,
+  .ops-record-grid div) {
+  border-color: var(--line-light) !important;
+  background: #f8fbfd !important;
+}
+.admin-app-shell :where(.ticket-queue-item, .ops-ticket-row, .ticket-detail-meta div,
+  .ticket-message, .ticket-detail-section, .timeline-item) { border-color: var(--line-light) !important; }
+.admin-app-shell :where(.ticket-queue-item:hover, .ticket-queue-item.is-selected,
+  .crm-table tbody tr:hover, .crm-table tbody tr:focus-visible) { background: #eaf3f9 !important; }
+.admin-app-shell .crm-table tbody tr.active { background: rgba(143, 196, 234, .22) !important; }
+.admin-app-shell :where(.crm-table th, .crm-table td) { color: #29485f !important; }
+.admin-app-shell :where(.ticket-queue-subject, .ticket-detail-meta strong,
+  .ticket-message p, .ticket-control-card > div > strong,
+  .ticket-detail-section > summary strong, .timeline-item div strong,
+  .user-admin-header h2, .user-chip strong) { color: #29485f !important; }
+.admin-app-shell :where(.ticket-panel-header, .ticket-toolbar, .ticket-detail-header,
+  .ticket-workflow-controls) { border-color: var(--line-light) !important; }
+.admin-app-shell .ops-bar { background: #dce7f1 !important; }
+.admin-app-shell .admin-mobile-header {
+  border-bottom-color: var(--line-light) !important;
+  background: rgba(247, 250, 253, .96) !important;
+}
+.admin-app-shell .admin-mobile-header nav a { color: #486278 !important; }
+.admin-app-shell .admin-mobile-header nav a.active {
+  background: rgba(143, 196, 234, .22) !important;
+  color: #245c86 !important;
 }
 
 /* Responsive and accessibility pass */
