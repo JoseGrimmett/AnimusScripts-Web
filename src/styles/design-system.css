@@ -473,6 +473,146 @@ a { color: inherit; }
   color: #245c86 !important;
 }
 
+/* Inbox and CRM share Overview's spacing, surfaces, and blue accents. */
+.admin-app-shell .submissions-main,
+.admin-app-shell .crm-main {
+  width: min(1480px, calc(100% - 3rem));
+  padding: 2rem 0 3.5rem;
+}
+.admin-app-shell .submissions-hero,
+.admin-app-shell .crm-page-head { margin-bottom: 1.5rem; gap: 1.5rem; }
+.admin-app-shell .submissions-hero h1,
+.admin-app-shell .crm-page-head h1 {
+  margin: .2rem 0 .35rem;
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  line-height: 1.15;
+  letter-spacing: -.04em;
+}
+.admin-app-shell .ticket-metrics { gap: .75rem; margin-bottom: .75rem; }
+.admin-app-shell .ticket-metrics article {
+  display: flex;
+  flex-direction: column;
+  min-height: 138px;
+  gap: 0;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius-sm);
+  background: var(--admin-panel);
+}
+.admin-app-shell .ticket-metrics article > span { color: #61788b; font-size: .82rem; font-weight: 650; }
+.admin-app-shell .ticket-metrics article > strong { margin: .45rem 0 .15rem; font-size: 2.35rem; line-height: 1.2; }
+.admin-app-shell .ticket-metrics article > small { margin-top: auto; }
+.admin-app-shell .ticket-metrics article.needs-attention {
+  border-color: rgba(50, 111, 158, .26);
+  background: linear-gradient(145deg, #dcebf5, #eef6fb);
+}
+.admin-app-shell .employee-workspace { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: .75rem; }
+.admin-app-shell .ticket-queue-shell,
+.admin-app-shell .ticket-detail-shell,
+.admin-app-shell .crm-action-card {
+  border-color: var(--line-light) !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--admin-panel) !important;
+}
+.admin-app-shell .ticket-panel-header,
+.admin-app-shell .ticket-detail-header { padding: 1.15rem; }
+.admin-app-shell .ticket-toolbar,
+.admin-app-shell .ticket-workflow-controls { background: #eef4f8 !important; padding: .85rem; gap: .75rem; }
+.admin-app-shell .ticket-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-app-shell .ticket-search { grid-column: 1 / -1; }
+.admin-app-shell .ticket-workflow-controls { grid-template-columns: 1fr; }
+.admin-app-shell .ticket-panel-header div > span,
+.admin-app-shell .ticket-control-card > div > span { font-family: inherit; font-size: .72rem; letter-spacing: .1em; color: #61788b; }
+.admin-app-shell .ticket-status-pill { color: #326f9e; background: #e7f1f8; border-color: #c9deed; font-size: .65rem; }
+.admin-app-shell .ticket-status-pill.status-waiting { color: #80571c; background: #fff4df; border-color: #ead6ae; }
+.admin-app-shell .ticket-status-pill.status-resolved { color: #5a6f82; background: #edf1f5; border-color: #d6dfe6; }
+.admin-app-shell .ticket-panel-header > strong,
+.admin-app-shell .user-admin-header > span { color: #326f9e !important; background: #e7f1f8; }
+.admin-app-shell .crm-toolbar { padding: .55rem; border: 1px solid var(--line-light); border-radius: var(--radius-sm); margin-bottom: .75rem; }
+.admin-app-shell .crm-tab,
+.admin-app-shell .crm-refresh { color: #486278; font-size: .82rem; font-weight: 650; }
+.admin-app-shell .crm-tab:hover,
+.admin-app-shell .crm-refresh:hover { background: #eaf3f9; color: #245c86; }
+.admin-app-shell .crm-tab.active { background: #dcebf5; color: #245c86; }
+.admin-app-shell .crm-grid { gap: .75rem; border: 0; border-radius: 0; overflow: visible; background: transparent !important; }
+.admin-app-shell .crm-list-shell,
+.admin-app-shell .crm-detail-shell { min-width: 0; padding: 1.15rem; align-self: start; }
+.admin-app-shell .crm-section-head h2 { font-size: 1.15rem; }
+.admin-app-shell .crm-section-head p { font-size: .82rem; line-height: 1.5; }
+.admin-app-shell .crm-count-pill { padding: .35rem .65rem; background: #e7f1f8; color: #326f9e; font-size: .75rem; font-weight: 650; }
+.admin-app-shell .crm-input { padding: .7rem .8rem; min-height: 44px; font-size: .84rem; }
+.admin-app-shell textarea.crm-input { min-height: 110px; resize: vertical; }
+.admin-app-shell .crm-field { min-width: 0; }
+.admin-app-shell .crm-field span { font-size: .78rem; font-weight: 650; }
+.admin-app-shell .crm-table { font-size: .82rem; }
+.admin-app-shell .crm-table th { background: #eef4f8; }
+.admin-app-shell .crm-table td { padding-block: .9rem; }
+.admin-app-shell .crm-detail-meta { flex-wrap: wrap; border-color: var(--line-light); background: #eef4f8; font-size: .78rem; }
+.admin-app-shell .crm-detail-meta span { color: #5a6f82; overflow-wrap: anywhere; }
+.admin-app-shell :is(.crm-input, .submissions-input, .crm-tab, .crm-refresh, .ticket-queue-item, .ticket-detail-section > summary):focus-visible {
+  outline: 2px solid #326f9e;
+  outline-offset: 2px;
+}
+@media (max-width: 1200px) {
+  .admin-app-shell .employee-workspace,
+  .admin-app-shell .crm-grid { grid-template-columns: 1fr; }
+  .admin-app-shell .ticket-detail-shell { position: static; max-height: none; }
+  .admin-app-shell .ticket-queue-list { min-height: 240px; max-height: 480px; }
+  .admin-app-shell .user-admin-shell .submissions-unlock { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .admin-app-shell .submissions-main,
+  .admin-app-shell .crm-main { width: calc(100% - 1.25rem); padding-top: 1rem; }
+}
+@media (max-width: 640px) {
+  .admin-app-shell .crm-toolbar { align-items: stretch; flex-direction: column; gap: .5rem; }
+  .admin-app-shell .crm-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-app-shell .crm-actions-bottom { display: grid; grid-template-columns: 1fr; }
+  .admin-app-shell .ticket-toolbar,
+  .admin-app-shell .user-admin-shell .submissions-unlock { grid-template-columns: 1fr; }
+  .admin-app-shell .submissions-hero { gap: 1rem; }
+}
+@media (max-width: 480px) {
+  .admin-app-shell .ticket-metrics,
+  .admin-app-shell .submissions-actions { grid-template-columns: 1fr; }
+}
+
+/* Submission details must remain readable with real customer content. */
+.admin-app-shell .ticket-queue-item { border-radius: 0; }
+.admin-app-shell .ticket-queue-item:focus-visible { outline-offset: -3px; }
+.admin-app-shell .ticket-detail-header > div,
+.admin-app-shell .timeline-item > div,
+.admin-app-shell .user-admin-header > div,
+.admin-app-shell .submissions-label { min-width: 0; }
+.admin-app-shell .ticket-detail-header h2,
+.admin-app-shell .ticket-detail-id,
+.admin-app-shell .ticket-message p,
+.admin-app-shell .timeline-item p,
+.admin-app-shell .timeline-item strong { overflow-wrap: anywhere; }
+.admin-app-shell .ticket-detail-meta strong { white-space: normal; overflow-wrap: anywhere; }
+.admin-app-shell .ticket-message > span,
+.admin-app-shell .ticket-detail-meta span,
+.admin-app-shell .ticket-detail-section > summary small,
+.admin-app-shell .timeline-item div > span,
+.admin-app-shell .user-chip div > span { color: #5a6f82; }
+.admin-app-shell .ticket-empty-state button,
+.admin-app-shell .ticket-detail-empty > span,
+.admin-app-shell .user-chip-avatar { color: #326f9e; }
+.admin-app-shell .submissions-main textarea.submissions-input { resize: vertical; min-height: 88px; }
+.admin-app-shell .submissions-main .submissions-input { font-size: .84rem; min-height: 44px; }
+.admin-app-shell .submissions-status { border-color: var(--line-light); background: #eaf3f9; }
+.admin-app-shell .user-admin-shell.card-raise:hover { transform: none !important; box-shadow: none !important; border-color: var(--line-light) !important; }
+.admin-app-shell .submissions-main button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 640px) {
+  .admin-app-shell .ticket-detail-header,
+  .admin-app-shell .user-admin-header { align-items: flex-start; flex-direction: column; gap: .65rem; }
+  .admin-app-shell .timeline-item { grid-template-columns: auto minmax(0, 1fr); }
+  .admin-app-shell .timeline-item time { grid-column: 2; }
+  .admin-app-shell .crm-action-panel { grid-template-columns: 1fr; }
+  .admin-app-shell .ticket-empty-state,
+  .admin-app-shell .ticket-detail-empty { min-height: 240px; padding: 1.25rem; }
+}
+
 /* Responsive and accessibility pass */
 @media (max-width: 980px) {
   .container { width: min(100% - 32px, var(--container)); }
