@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Local tooling and scratch output
+.venv/
+tmp/
 *.local
 data/*.sqlite
 data/*.sqlite-*
