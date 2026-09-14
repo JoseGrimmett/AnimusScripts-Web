@@ -802,6 +802,7 @@ const SubmissionsPage = () => {
                     <option value="all">Everyone</option>
                     <option value="mine">Assigned to me</option>
                     <option value="unassigned">Unassigned</option>
+                    <option value="">NULL</option>
                   </select>
                 </div>
 
