@@ -1,3 +1,4 @@
+const { isSecureDeployment, sessionCookieName } = require('./requestSecurity.cjs')
 const crypto = require('node:crypto')
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8
@@ -138,10 +139,10 @@ function verifyOAuthState(value) {
 }
 
 function serializeSessionCookie(token) {
-  const secure = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
-  const sameSite = secure ? 'None' : 'Lax'
+  const secure = isSecureDeployment()
+  const sameSite = 'Lax'
   const parts = [
-    `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`,
+    `${sessionCookieName(SESSION_COOKIE_NAME)}=${encodeURIComponent(token)}`,
     'Path=/',
     'HttpOnly',
     `SameSite=${sameSite}`,
@@ -156,10 +157,10 @@ function serializeSessionCookie(token) {
 }
 
 function serializeClearedSessionCookie() {
-  const secure = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
-  const sameSite = secure ? 'None' : 'Lax'
+  const secure = isSecureDeployment()
+  const sameSite = 'Lax'
   const parts = [
-    `${SESSION_COOKIE_NAME}=`,
+    `${sessionCookieName(SESSION_COOKIE_NAME)}=`,
     'Path=/',
     'HttpOnly',
     `SameSite=${sameSite}`,
@@ -189,7 +190,11 @@ function parseCookies(req) {
 
       const key = pair.slice(0, separator)
       const value = pair.slice(separator + 1)
-      acc[key] = decodeURIComponent(value)
+      try {
+        acc[key] = decodeURIComponent(value)
+      } catch {
+        // Malformed cookies are not authentication credentials.
+      }
       return acc
     }, {})
 }

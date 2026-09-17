@@ -134,11 +134,14 @@ const NavBar = () => {
 
   const handleSignOut = async () => {
     await Promise.allSettled([
-      fetch("/api/admin/logout", { method: "POST", credentials: "include" }),
+      fetch("/api/admin/logout", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
+      }),
       fetch("/api/portal/logout", { method: "POST", credentials: "include" }),
     ]);
 
-    localStorage.removeItem("animusAdminSession");
     setAdminUser(null);
     setPortalUser(null);
     setUserMenuOpen(false);

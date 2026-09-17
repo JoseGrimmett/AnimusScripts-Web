@@ -1,3 +1,4 @@
+const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
   createPortalTicket,
   createPortalTicketReply,
@@ -165,25 +166,9 @@ function sendRateLimited(res, retryAfterSeconds) {
   })
 }
 
-function getBearerToken(req) {
-  const header = getRequestHeader(req, 'authorization')
-
-  if (!header || !header.startsWith('Bearer ')) {
-    return null
-  }
-
-  return header.slice(7).trim()
-}
-
 function getPortalSession(req) {
-  const bearerSession = verifyPortalToken(getBearerToken(req))
-
-  if (bearerSession) {
-    return bearerSession
-  }
-
   const cookies = parseCookies(req)
-  return verifyPortalToken(cookies[PORTAL_SESSION_COOKIE_NAME])
+  return verifyPortalToken(cookies[sessionCookieName(PORTAL_SESSION_COOKIE_NAME)])
 }
 
 function setPortalCookie(res, token) {
@@ -195,6 +180,8 @@ function clearPortalCookie(res) {
 }
 
 async function handlePortalSignup(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -229,7 +216,6 @@ async function handlePortalSignup(req, res) {
 
     return sendJson(res, 200, {
       ok: true,
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -248,6 +234,8 @@ async function handlePortalSignup(req, res) {
 }
 
 async function handlePortalLogin(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -287,7 +275,6 @@ async function handlePortalLogin(req, res) {
 
   return sendJson(res, 200, {
     ok: true,
-    token,
     user: {
       id: user.id,
       email: user.email,
@@ -297,6 +284,8 @@ async function handlePortalLogin(req, res) {
 }
 
 async function handlePortalSession(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -320,6 +309,8 @@ async function handlePortalSession(req, res) {
 }
 
 async function handlePortalLogout(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -333,6 +324,8 @@ async function handlePortalLogout(req, res) {
 }
 
 async function handlePortalTickets(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getPortalSession(req)
 
   if (!session) {

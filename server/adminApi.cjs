@@ -1,3 +1,4 @@
+const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
   SESSION_COOKIE_NAME,
   createAdminToken,
@@ -80,19 +81,9 @@ async function writeAuditSafely(event) {
   }
 }
 
-function getBearerToken(req) {
-  const header = getRequestHeader(req, 'authorization')
-
-  if (!header || !header.startsWith('Bearer ')) {
-    return null
-  }
-
-  return header.slice(7).trim()
-}
-
 function getCookieToken(req) {
   const cookies = parseCookies(req)
-  return cookies[SESSION_COOKIE_NAME] || null
+  return cookies[sessionCookieName(SESSION_COOKIE_NAME)] || null
 }
 
 function safeVerifyAdminToken(token) {
@@ -104,13 +95,6 @@ function safeVerifyAdminToken(token) {
 }
 
 function getAdminSession(req) {
-  const bearerToken = getBearerToken(req)
-  const sessionFromBearer = safeVerifyAdminToken(bearerToken)
-
-  if (sessionFromBearer) {
-    return sessionFromBearer
-  }
-
   const cookieToken = getCookieToken(req)
   return safeVerifyAdminToken(cookieToken)
 }
@@ -208,6 +192,8 @@ function redirect(res, location) {
 }
 
 async function handleAdminLogin(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -251,7 +237,6 @@ async function handleAdminLogin(req, res) {
 
   return sendJson(res, 200, {
     ok: true,
-    token,
     user: {
       id: user.id,
       username: user.username,
@@ -261,6 +246,8 @@ async function handleAdminLogin(req, res) {
 }
 
 async function handleAdminSession(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -284,6 +271,8 @@ async function handleAdminSession(req, res) {
 }
 
 async function handleAdminLogout(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -297,6 +286,8 @@ async function handleAdminLogout(req, res) {
 }
 
 async function handleAdminSubmissions(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -329,6 +320,8 @@ async function handleAdminSubmissions(req, res) {
 }
 
 async function handleAdminTickets(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
 
   if (!session) {
@@ -402,6 +395,8 @@ async function handleAdminTickets(req, res) {
 }
 
 async function handleAdminUsers(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
 
   if (!session) {
@@ -448,6 +443,8 @@ async function handleAdminUsers(req, res) {
 }
 
 async function handleAdminCrm(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
 
   if (!session) {
@@ -529,6 +526,8 @@ async function handleAdminCrm(req, res) {
 }
 
 async function handleAdminCrmActions(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
 
   if (!session) {
@@ -616,6 +615,8 @@ async function handleAdminCrmActions(req, res) {
 }
 
 async function handleAdminCrmActivity(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
 
   if (!session) {
@@ -652,6 +653,8 @@ async function handleAdminCrmActivity(req, res) {
 }
 
 async function handleAdminDashboard(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   const session = getAdminSession(req)
   if (!session) return sendJson(res, 401, { error: 'Unauthorized' })
   if (!hasEmployeeAccess(session)) return sendJson(res, 403, { error: 'Employee access is required' })
@@ -700,6 +703,8 @@ async function handleAdminDashboard(req, res) {
 }
 
 async function handleMicrosoftStart(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })
@@ -737,6 +742,8 @@ async function handleMicrosoftStart(req, res) {
 }
 
 async function handleMicrosoftCallback(req, res) {
+  if (rejectUntrustedMutation(req, res)) return
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })

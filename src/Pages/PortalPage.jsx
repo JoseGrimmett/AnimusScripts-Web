@@ -180,8 +180,9 @@ const PortalPage = () => {
       await fetch("/api/admin/logout", {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
       }).catch(() => {});
-      localStorage.removeItem("animusAdminSession");
       setUser(payload.user);
       setAuthForm((prev) => ({
         ...prev,

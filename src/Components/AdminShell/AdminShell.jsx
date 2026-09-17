@@ -5,8 +5,11 @@ import "./AdminShell.css";
 
 const AdminShell = ({ user, children }) => {
   const handleSignOut = async () => {
-    await fetch("/api/admin/logout", { method: "POST", credentials: "include" }).catch(() => null);
-    localStorage.removeItem("animusAdminSession");
+    await fetch("/api/admin/logout", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "logout" }),
+    }).catch(() => null);
     emitAuthChanged();
     window.location.assign("/admin");
   };

@@ -4,8 +4,6 @@ import AdminShell from "../Components/AdminShell/AdminShell";
 import "./SubmissionsPage.css";
 import { AUTH_CHANGED_EVENT, emitAuthChanged, emitToast } from "../utils/uiEvents";
 
-const ADMIN_SESSION_KEY = "animusAdminSession";
-
 const formatDate = (value) => {
   if (!value) {
     return "-";
@@ -109,7 +107,6 @@ const SubmissionsPage = () => {
   const [ticketOwnershipFilter, setTicketOwnershipFilter] = useState("all");
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
     setSession(null);
     setTickets([]);
     setSelectedTicket(null);
@@ -134,7 +131,6 @@ const SubmissionsPage = () => {
 
       return {
         user: payload.user,
-        token: null,
       };
     } catch {
       return null;
@@ -142,7 +138,7 @@ const SubmissionsPage = () => {
   }, []);
 
   const fetchTickets = useCallback(async () => {
-    if (!session?.token && !session?.user) {
+    if (!session?.user) {
       const activeSession = await fetchSession();
 
       if (!activeSession) {
@@ -157,9 +153,7 @@ const SubmissionsPage = () => {
     setStatus("Loading ticket queue...");
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/tickets?limit=300", {
-        headers: authHeader,
         credentials: "include",
       });
       const payload = await response.json();
@@ -189,7 +183,7 @@ const SubmissionsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [clearSession, fetchSession, session?.token, session?.user]);
+  }, [clearSession, fetchSession, session?.user]);
 
   const fetchCrmActivity = useCallback(
     async (requestId) => {
@@ -201,9 +195,7 @@ const SubmissionsPage = () => {
       setIsActivityLoading(true);
 
       try {
-        const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
         const response = await fetch(`/api/admin/crm-activity?requestId=${encodeURIComponent(requestId)}`, {
-          headers: authHeader,
           credentials: "include",
         });
 
@@ -221,7 +213,7 @@ const SubmissionsPage = () => {
         setIsActivityLoading(false);
       }
     },
-    [session?.token],
+    [],
   );
 
   const fetchTicketDetail = useCallback(
@@ -233,9 +225,7 @@ const SubmissionsPage = () => {
       setIsDetailLoading(true);
 
       try {
-        const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
         const response = await fetch(`/api/admin/tickets?requestId=${encodeURIComponent(requestId)}`, {
-          headers: authHeader,
           credentials: "include",
         });
 
@@ -256,7 +246,7 @@ const SubmissionsPage = () => {
         setIsDetailLoading(false);
       }
     },
-    [fetchCrmActivity, session?.token],
+    [fetchCrmActivity],
   );
 
   const fetchUsers = useCallback(async () => {
@@ -266,9 +256,7 @@ const SubmissionsPage = () => {
     }
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/users?limit=200", {
-        headers: authHeader,
         credentials: "include",
       });
 
@@ -282,7 +270,7 @@ const SubmissionsPage = () => {
     } catch (error) {
       setStatus(error.message || "Failed to load users");
     }
-  }, [session?.token, session?.user]);
+  }, [session?.user]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -297,6 +285,7 @@ const SubmissionsPage = () => {
 
     try {
       const response = await fetch("/api/admin/login", {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -318,7 +307,6 @@ const SubmissionsPage = () => {
         credentials: "include",
       }).catch(() => {});
       const nextSession = {
-        token: payload.token,
         user: payload.user,
       };
 
@@ -342,12 +330,10 @@ const SubmissionsPage = () => {
     setIsAssigning(true);
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/tickets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...authHeader,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -381,12 +367,10 @@ const SubmissionsPage = () => {
     setIsUpdatingStatus(true);
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/tickets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...authHeader,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -423,12 +407,10 @@ const SubmissionsPage = () => {
     setIsCreatingCrmNote(true);
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/crm-actions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...authHeader,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -464,12 +446,10 @@ const SubmissionsPage = () => {
     setIsCreatingCrmTask(true);
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/crm-actions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...authHeader,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -511,12 +491,10 @@ const SubmissionsPage = () => {
     setIsLoading(true);
 
     try {
-      const authHeader = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
       const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...authHeader,
         },
         credentials: "include",
         body: JSON.stringify({
@@ -543,7 +521,7 @@ const SubmissionsPage = () => {
   };
 
   useEffect(() => {
-    if (session?.token || session?.user) {
+    if (session?.user) {
       setIsSessionChecking(false);
       fetchTickets();
       fetchUsers();
@@ -563,8 +541,6 @@ const SubmissionsPage = () => {
         setIsSessionChecking(false);
         return;
       }
-
-      localStorage.removeItem(ADMIN_SESSION_KEY);
       setTickets([]);
       setIsSessionChecking(false);
     });
@@ -572,7 +548,7 @@ const SubmissionsPage = () => {
     return () => {
       isActive = false;
     };
-  }, [fetchSession, fetchTickets, fetchUsers, session?.token, session?.user]);
+  }, [fetchSession, fetchTickets, fetchUsers, session?.user]);
 
   useEffect(() => {
     const handleAuthChanged = async () => {
