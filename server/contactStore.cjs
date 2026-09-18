@@ -1,8 +1,10 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
+const scrypt = require('node:util').promisify(crypto.scrypt)
 const Database = require('better-sqlite3')
 const { Pool } = require('pg')
+const REQUIRE_DURABLE_SECURITY_STORE = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL)
 
 const POSTGRES_URL =
   process.env.CONTACT_DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL || ''
@@ -1450,13 +1452,13 @@ function ensureCrmSchemaSqlite(db) {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_approvals_organization_id ON crm_approvals (organization_id)`)
 }
 
-function buildPasswordHash(password) {
+async function buildPasswordHash(password) {
   const salt = crypto.randomBytes(16).toString('hex')
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex')
+  const hash = (await scrypt(password, salt, 64)).toString('hex')
   return `${salt}:${hash}`
 }
 
-function verifyPassword(password, storedHash) {
+async function verifyPassword(password, storedHash) {
   if (!storedHash || typeof storedHash !== 'string' || !storedHash.includes(':')) {
     return false
   }
@@ -1467,7 +1469,7 @@ function verifyPassword(password, storedHash) {
     return false
   }
 
-  const computedHash = crypto.scryptSync(password, salt, 64).toString('hex')
+  const computedHash = (await scrypt(password, salt, 64)).toString('hex')
 
   try {
     return crypto.timingSafeEqual(Buffer.from(originalHash, 'hex'), Buffer.from(computedHash, 'hex'))
@@ -1916,7 +1918,7 @@ async function createOrUpdateAdminUser(username, password, role = 'employee') {
     throw new Error('Password must be at least 8 characters long')
   }
 
-  const passwordHash = buildPasswordHash(String(password))
+  const passwordHash = await buildPasswordHash(String(password))
 
   if (shouldUsePostgres()) {
     const pool = await ensurePostgres()
@@ -2024,7 +2026,7 @@ async function verifyAdminCredentials(username, password) {
       .get(normalizedUsername)
   }
 
-  if (!user || !verifyPassword(String(password), user.password_hash)) {
+  if (!user || !await verifyPassword(String(password), user.password_hash)) {
     return null
   }
 
@@ -2099,7 +2101,7 @@ async function createPortalUser({ email, password, displayName }) {
     throw new Error('Password must be at least 8 characters long')
   }
 
-  const passwordHash = buildPasswordHash(String(password))
+  const passwordHash = await buildPasswordHash(String(password))
 
   if (shouldUsePostgres()) {
     const pool = await ensurePostgres()
@@ -2218,7 +2220,7 @@ async function getPortalUserByEmail(email) {
 async function verifyPortalCredentials(email, password) {
   const user = await getPortalUserByEmail(email)
 
-  if (!user || !verifyPassword(String(password || ''), user.passwordHash)) {
+  if (!user || !await verifyPassword(String(password || ''), user.passwordHash)) {
     return null
   }
 
@@ -3325,7 +3327,14 @@ async function backfillCrm({ apply = false } = {}) {
   return summary
 }
 
+async function getRateLimitDatabase() {
+  if (shouldUsePostgres()) return { postgres: await ensurePostgres() }
+  if (REQUIRE_DURABLE_SECURITY_STORE) throw new Error('Durable security storage requires PostgreSQL')
+  return { sqlite: ensureSqlite() }
+}
+
 module.exports = {
+  getRateLimitDatabase,
   assignAdminTicket,
   backfillCrm,
   createOrUpdateAdminUser,

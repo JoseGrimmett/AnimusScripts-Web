@@ -1,3 +1,4 @@
+const { enforceRateLimit } = require('./rateLimit.cjs')
 const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
   SESSION_COOKIE_NAME,
@@ -203,6 +204,9 @@ async function handleAdminLogin(req, res) {
   const username = payload.username
   const password = payload.password
 
+  const rateLimit = await enforceRateLimit(req, res, 'adminLogin', username || '')
+  if (!rateLimit) return
+
   const user = await verifyAdminCredentials(username, password)
 
   if (!user) {
@@ -224,6 +228,7 @@ async function handleAdminLogin(req, res) {
     return sendJson(res, 500, { error: 'Admin auth secret is not configured' })
   }
 
+  if (!await rateLimit.success()) return
   setSessionCookie(res, token)
   await writeAuditSafely({
     actorType: 'staff',
@@ -710,6 +715,8 @@ async function handleMicrosoftStart(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
+  if (!await enforceRateLimit(req, res, 'microsoftStart')) return
+
   const clientId = (process.env.MICROSOFT_CLIENT_ID || '').trim()
 
   if (!clientId) {
@@ -748,6 +755,8 @@ async function handleMicrosoftCallback(req, res) {
     res.setHeader('Allow', 'GET')
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
+
+  if (!await enforceRateLimit(req, res, 'microsoftCallback')) return
 
   const clientId = (process.env.MICROSOFT_CLIENT_ID || '').trim()
   const clientSecret = (process.env.MICROSOFT_CLIENT_SECRET || '').trim()
@@ -836,6 +845,8 @@ async function handleMicrosoftCallback(req, res) {
     || idTokenPayload.upn
     || ''
   ).toLowerCase()
+
+  if (!await enforceRateLimit(req, res, 'microsoftCallback', email, { accountOnly: true })) return
 
   if (!isAllowedMicrosoftUser(email)) {
     return sendJson(res, 403, { error: 'Microsoft account is not allowed for admin access' })

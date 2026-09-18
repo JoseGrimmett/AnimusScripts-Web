@@ -1,3 +1,4 @@
+const { applyApiResponseSecurity } = require('./responseSecurity.cjs')
 const CANONICAL_ORIGINS = ['https://www.animusscripts.com', 'https://animusscripts.com']
 
 function isSecureDeployment() {
@@ -40,6 +41,7 @@ function hasTrustedOrigin(req) {
 }
 
 function rejectUntrustedMutation(req, res) {
+  applyApiResponseSecurity(res)
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return false
   if (hasTrustedOrigin(req)) return false
   res.statusCode = 403

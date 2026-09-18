@@ -1,11 +1,13 @@
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
+const { applyApiResponseSecurity } = require('../server/responseSecurity.cjs')
 require('dotenv').config({
   path: require('node:path').resolve(globalThis.process?.cwd?.() || '.', '.env.local'),
   override: true,
 })
 
+const { enforceRateLimit } = require('../server/rateLimit.cjs')
 const { storeSubmission } = require('../server/contactStore.cjs')
 const env = globalThis.process?.env || {}
 
@@ -116,6 +118,7 @@ async function sendNotification(payload, requestId) {
 }
 
 export default async function handler(req, res) {
+  applyApiResponseSecurity(res)
   const requestId = createRequestId()
 
   if (req.method !== 'POST') {
@@ -125,6 +128,7 @@ export default async function handler(req, res) {
   }
 
   const payload = parseBody(req.body)
+  if (!await enforceRateLimit(req, res, 'contact', payload.email || '')) return
   const isLead = payload.kind === 'lead'
 
   console.log(

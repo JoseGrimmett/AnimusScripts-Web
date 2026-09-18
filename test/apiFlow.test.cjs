@@ -56,6 +56,7 @@ function createResponse() {
 async function call(handler, { method = 'GET', url = '/', body, cookie, origin = 'https://www.animusscripts.com', headers = {}, ip = '127.0.0.1' } = {}) {
   const req = {
     method,
+    socket: { remoteAddress: ip },
     url,
     body,
     headers: {
@@ -67,6 +68,12 @@ async function call(handler, { method = 'GET', url = '/', body, cookie, origin =
   }
   const res = createResponse()
   await handler(req, res)
+  assert.equal(res.headers['cache-control'], 'private, no-store, max-age=0')
+  assert.equal(res.headers.pragma, 'no-cache')
+  assert.equal(res.headers['cdn-cache-control'], 'no-store')
+  assert.equal(res.headers['vercel-cdn-cache-control'], 'no-store')
+  assert.equal(res.headers['x-content-type-options'], 'nosniff')
+  assert.equal(res.headers['x-frame-options'], 'DENY')
   return res
 }
 

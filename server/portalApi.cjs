@@ -1,3 +1,4 @@
+const { enforceRateLimit } = require('./rateLimit.cjs')
 const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
   createPortalTicket,
@@ -19,11 +20,6 @@ const {
 function createRequestId(prefix = 'ticket') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
-
-const AUTH_WINDOW_MS = Number(process.env.PORTAL_AUTH_WINDOW_MS || 10 * 60 * 1000)
-const AUTH_MAX_ATTEMPTS = Number(process.env.PORTAL_AUTH_MAX_ATTEMPTS || 5)
-const AUTH_LOCK_MS = Number(process.env.PORTAL_AUTH_LOCK_MS || 15 * 60 * 1000)
-const authAttemptStore = new Map()
 
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function' && typeof res.json === 'function') {
@@ -52,120 +48,6 @@ function parseBody(body) {
   return body
 }
 
-function getRequestHeader(req, name) {
-  const lowerName = name.toLowerCase()
-
-  if (typeof req.get === 'function') {
-    return req.get(name) || req.get(lowerName)
-  }
-
-  return req.headers?.[lowerName] || req.headers?.[name] || null
-}
-
-function getClientIp(req) {
-  const forwarded = getRequestHeader(req, 'x-forwarded-for')
-
-  if (forwarded) {
-    return String(forwarded).split(',')[0].trim() || 'unknown'
-  }
-
-  return req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown'
-}
-
-function getAuthRateKey(req, email) {
-  const normalizedEmail = String(email || '').trim().toLowerCase()
-  return `${getClientIp(req)}|${normalizedEmail || 'anon'}`
-}
-
-function cleanupAuthAttemptEntry(entry, now) {
-  if (!entry) {
-    return null
-  }
-
-  if (entry.lockUntil && entry.lockUntil > now) {
-    return entry
-  }
-
-  const recentAttempts = (entry.attempts || []).filter((attemptAt) => now - attemptAt <= AUTH_WINDOW_MS)
-
-  if (!recentAttempts.length) {
-    return {
-      attempts: [],
-      lockUntil: 0,
-    }
-  }
-
-  return {
-    attempts: recentAttempts,
-    lockUntil: 0,
-  }
-}
-
-function readAuthAttemptState(rateKey) {
-  const now = Date.now()
-  const cleaned = cleanupAuthAttemptEntry(authAttemptStore.get(rateKey), now)
-
-  if (!cleaned) {
-    return {
-      attempts: [],
-      lockUntil: 0,
-      now,
-    }
-  }
-
-  authAttemptStore.set(rateKey, cleaned)
-  return {
-    attempts: cleaned.attempts || [],
-    lockUntil: cleaned.lockUntil || 0,
-    now,
-  }
-}
-
-function getLockInfo(rateKey) {
-  const state = readAuthAttemptState(rateKey)
-
-  if (state.lockUntil > state.now) {
-    return {
-      locked: true,
-      retryAfterSeconds: Math.max(1, Math.ceil((state.lockUntil - state.now) / 1000)),
-    }
-  }
-
-  return { locked: false, retryAfterSeconds: 0 }
-}
-
-function registerFailedAuthAttempt(rateKey) {
-  const now = Date.now()
-  const state = readAuthAttemptState(rateKey)
-  const updatedAttempts = [...state.attempts, now].filter((attemptAt) => now - attemptAt <= AUTH_WINDOW_MS)
-
-  const nextState = {
-    attempts: updatedAttempts,
-    lockUntil: updatedAttempts.length >= AUTH_MAX_ATTEMPTS ? now + AUTH_LOCK_MS : 0,
-  }
-
-  authAttemptStore.set(rateKey, nextState)
-
-  return {
-    locked: nextState.lockUntil > now,
-    retryAfterSeconds: nextState.lockUntil > now
-      ? Math.max(1, Math.ceil((nextState.lockUntil - now) / 1000))
-      : 0,
-  }
-}
-
-function clearAuthAttempts(rateKey) {
-  authAttemptStore.delete(rateKey)
-}
-
-function sendRateLimited(res, retryAfterSeconds) {
-  res.setHeader('Retry-After', String(retryAfterSeconds))
-  return sendJson(res, 429, {
-    error: 'Too many attempts. Try again later.',
-    retryAfterSeconds,
-  })
-}
-
 function getPortalSession(req) {
   const cookies = parseCookies(req)
   return verifyPortalToken(cookies[sessionCookieName(PORTAL_SESSION_COOKIE_NAME)])
@@ -188,12 +70,7 @@ async function handlePortalSignup(req, res) {
   }
 
   const payload = parseBody(req.body)
-  const rateKey = getAuthRateKey(req, payload.email)
-  const lockInfo = getLockInfo(rateKey)
-
-  if (lockInfo.locked) {
-    return sendRateLimited(res, lockInfo.retryAfterSeconds)
-  }
+  if (!await enforceRateLimit(req, res, 'portalSignup', payload.email || '')) return
 
   try {
     const user = await createPortalUser({
@@ -212,7 +89,6 @@ async function handlePortalSignup(req, res) {
     }
 
     setPortalCookie(res, token)
-    clearAuthAttempts(rateKey)
 
     return sendJson(res, 200, {
       ok: true,
@@ -223,13 +99,7 @@ async function handlePortalSignup(req, res) {
       },
     })
   } catch (error) {
-    const attemptInfo = registerFailedAuthAttempt(rateKey)
-
-    if (attemptInfo.locked) {
-      return sendRateLimited(res, attemptInfo.retryAfterSeconds)
-    }
-
-    return sendJson(res, 400, { error: error.message || 'Failed to create account' })
+    return sendJson(res, 400, { error: 'Unable to create account with those details' })
   }
 }
 
@@ -242,22 +112,12 @@ async function handlePortalLogin(req, res) {
   }
 
   const payload = parseBody(req.body)
-  const rateKey = getAuthRateKey(req, payload.email)
-  const lockInfo = getLockInfo(rateKey)
-
-  if (lockInfo.locked) {
-    return sendRateLimited(res, lockInfo.retryAfterSeconds)
-  }
+  const rateLimit = await enforceRateLimit(req, res, 'portalLogin', payload.email || '')
+  if (!rateLimit) return
 
   const user = await verifyPortalCredentials(payload.email, payload.password)
 
   if (!user) {
-    const attemptInfo = registerFailedAuthAttempt(rateKey)
-
-    if (attemptInfo.locked) {
-      return sendRateLimited(res, attemptInfo.retryAfterSeconds)
-    }
-
     return sendJson(res, 401, { error: 'Invalid email or password' })
   }
 
@@ -270,8 +130,8 @@ async function handlePortalLogin(req, res) {
     return sendJson(res, 500, { error: 'Portal auth secret is not configured' })
   }
 
+  if (!await rateLimit.success()) return
   setPortalCookie(res, token)
-  clearAuthAttempts(rateKey)
 
   return sendJson(res, 200, {
     ok: true,
@@ -361,6 +221,7 @@ async function handlePortalTickets(req, res) {
 
   if (req.method === 'POST') {
     const payload = parseBody(req.body)
+    if (!await enforceRateLimit(req, res, payload.requestId ? 'ticketReply' : 'ticketCreate', session.email)) return
 
     if (payload.requestId) {
       const replyMessage = String(payload.reply || payload.message || '').trim()
