@@ -1,15 +1,19 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { emitAuthChanged } from "../../utils/uiEvents";
+import { emitAuthChanged, emitToast } from "../../utils/uiEvents";
 import "./AdminShell.css";
 
 const AdminShell = ({ user, children }) => {
   const handleSignOut = async () => {
-    await fetch("/api/admin/logout", {
+    const response = await fetch("/api/admin/logout", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "logout" }),
     }).catch(() => null);
+    if (!response?.ok) {
+      emitToast({ message: 'Sign-out could not be completed. Please try again.', type: 'error' });
+      return;
+    }
     emitAuthChanged();
     window.location.assign("/admin");
   };

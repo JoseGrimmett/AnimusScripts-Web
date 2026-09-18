@@ -102,6 +102,7 @@ const SubmissionsPage = () => {
   const [crmActivity, setCrmActivity] = useState([]);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [session, setSession] = useState(null);
+  const [managingUserId, setManagingUserId] = useState(null);
   const [ticketQuery, setTicketQuery] = useState("");
   const [ticketStatusFilter, setTicketStatusFilter] = useState("all");
   const [ticketOwnershipFilter, setTicketOwnershipFilter] = useState("all");
@@ -477,6 +478,29 @@ const SubmissionsPage = () => {
       setStatus(error.message || "Failed to save CRM task");
     } finally {
       setIsCreatingCrmTask(false);
+    }
+  };
+
+  const handleAccountAction = async (user, action) => {
+    setManagingUserId(user.id);
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, accountType: 'admin', userId: user.id }),
+      });
+      if (!response.ok) throw new Error('Unable to update account access. Please try again.');
+      setStatus(action === 'revoke_sessions' ? 'All sessions revoked.' : action === 'disable' ? 'Account disabled and sessions revoked.' : 'Account enabled. A fresh sign-in is required.');
+      if (String(user.id) === String(session?.user?.id)) {
+        clearSession();
+        emitAuthChanged();
+      } else {
+        await fetchUsers();
+      }
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setManagingUserId(null);
     }
   };
 
@@ -968,7 +992,9 @@ const SubmissionsPage = () => {
               {users.map((user) => (
                 <div className="user-chip" key={user.username}>
                   <span className="user-chip-avatar" aria-hidden="true">{String(user.username || "U").slice(0, 1).toUpperCase()}</span>
-                  <div><strong>{user.username}</strong><span>{humanize(user.role)}</span></div>
+                  <div><strong>{user.username}</strong><span>{user.disabled ? 'Disabled' : humanize(user.role)}</span></div>
+                  <button type="button" className="btn ghost-btn" disabled={managingUserId !== null} onClick={() => handleAccountAction(user, 'revoke_sessions')}>Revoke sessions</button>
+                  <button type="button" className="btn ghost-btn" disabled={managingUserId !== null || String(user.id) === String(session.user.id)} onClick={() => handleAccountAction(user, user.disabled ? 'enable' : 'disable')}>{user.disabled ? 'Enable account' : 'Disable account'}</button>
                 </div>
               ))}
             </div>

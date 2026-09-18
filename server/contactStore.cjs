@@ -1933,6 +1933,7 @@ async function createOrUpdateAdminUser(username, password, role = 'employee') {
       [normalizedUsername, passwordHash, normalizedRole],
     )
 
+    await require('./sessionStore.cjs').manageAccount('admin', result.rows[0].id, 'revoke_sessions')
     return {
       id: result.rows[0].id,
       username: result.rows[0].username,
@@ -1944,10 +1945,10 @@ async function createOrUpdateAdminUser(username, password, role = 'employee') {
   const db = ensureSqlite()
   db.prepare(
     `
-      INSERT INTO admin_users (username, password_hash)
-      VALUES (?, ?)
+      INSERT INTO admin_users (username, password_hash, role)
+      VALUES (?, ?, ?)
       ON CONFLICT(username)
-      DO UPDATE SET password_hash = excluded.password_hash, role = ?
+      DO UPDATE SET password_hash = excluded.password_hash, role = excluded.role
     `,
   ).run(normalizedUsername, passwordHash, normalizedRole)
 
@@ -1955,6 +1956,7 @@ async function createOrUpdateAdminUser(username, password, role = 'employee') {
     .prepare('SELECT id, username, role, created_at FROM admin_users WHERE username = ?')
     .get(normalizedUsername)
 
+  await require('./sessionStore.cjs').manageAccount('admin', user.id, 'revoke_sessions')
   return {
     id: user.id,
     username: user.username,
@@ -2026,7 +2028,11 @@ async function verifyAdminCredentials(username, password) {
       .get(normalizedUsername)
   }
 
-  if (!user || !await verifyPassword(String(password), user.password_hash)) {
+  if (!user) return null
+  const sessionStore = require('./sessionStore.cjs')
+  const authSnapshot = await sessionStore.captureAccount('admin', user.id)
+  if (!authSnapshot || authSnapshot.credentialHash !== sessionStore.fingerprint(user.password_hash, user.role, user.username)) return null
+  if (!await verifyPassword(String(password), user.password_hash)) {
     return null
   }
 
@@ -2035,6 +2041,7 @@ async function verifyAdminCredentials(username, password) {
     username: user.username,
     role: normalizeAdminRole(user.role),
     createdAt: user.created_at,
+    authSnapshot,
   }
 }
 
@@ -2220,7 +2227,11 @@ async function getPortalUserByEmail(email) {
 async function verifyPortalCredentials(email, password) {
   const user = await getPortalUserByEmail(email)
 
-  if (!user || !await verifyPassword(String(password || ''), user.passwordHash)) {
+  if (!user) return null
+  const sessionStore = require('./sessionStore.cjs')
+  const authSnapshot = await sessionStore.captureAccount('portal', user.id)
+  if (!authSnapshot || authSnapshot.credentialHash !== sessionStore.fingerprint(user.passwordHash, 'portal', user.email)) return null
+  if (!await verifyPassword(String(password || ''), user.passwordHash)) {
     return null
   }
 
@@ -2229,6 +2240,7 @@ async function verifyPortalCredentials(email, password) {
     email: user.email,
     displayName: user.displayName,
     createdAt: user.createdAt,
+    authSnapshot,
   }
 }
 

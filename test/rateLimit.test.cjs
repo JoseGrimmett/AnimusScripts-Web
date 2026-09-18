@@ -110,6 +110,7 @@ test('signup, OAuth, contact and ticket handlers stop before side effects when q
   t.mock.method(require('dotenv'), 'config', () => ({}))
   const { default: contact } = await import('../api/contact.js')
   const session = require('../server/portalSession.cjs')
+  const ticketUser = await contacts.createPortalUser({ email: 'blocked-ticket@example.test', password: 'SyntheticPassword123!' })
   for (const [handler, action, body, account, method] of [
     [portal.handlePortalSignup, 'portalSignup', { email: 'blocked@example.test', password: 'StrongPassword123!' }, 'blocked@example.test', 'POST'],
     [admin.handleMicrosoftStart, 'microsoftStart', {}, undefined, 'GET'],
@@ -120,7 +121,7 @@ test('signup, OAuth, contact and ticket handlers stop before side effects when q
   ]) {
     const req = request('203.0.113.100', body)
     req.method = method
-    if (action.startsWith('ticket')) req.headers.cookie = session.serializePortalSessionCookie(session.createPortalToken({ id: 99, email: account })).split(';')[0]
+    if (action.startsWith('ticket')) req.headers.cookie = session.serializePortalSessionCookie(await session.createPortalToken(ticketUser)).split(';')[0]
     const policy = POLICIES[action]
     const dimension = account ? 'account' : 'ip'
     const key = bucket(action, dimension, account || clientNetwork(req))

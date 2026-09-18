@@ -1,3 +1,4 @@
+const sessionStore = require('./sessionStore.cjs')
 const { isSecureDeployment, sessionCookieName } = require('./requestSecurity.cjs')
 const crypto = require('node:crypto')
 
@@ -92,29 +93,12 @@ function verifySignedPayload(token) {
   }
 }
 
-function createAdminToken(user) {
-  return createSignedPayload({
-    type: 'admin_session',
-    sub: String(user.id),
-    username: user.username,
-    role: user.role || 'employee',
-  })
+function createAdminToken(user, previousToken) {
+  return sessionStore.createSession('admin', user, previousToken)
 }
 
 function verifyAdminToken(token) {
-  const payload = verifySignedPayload(token)
-
-  if (!payload || payload.type !== 'admin_session') {
-    return null
-  }
-
-  return {
-    id: payload.sub,
-    username: payload.username,
-    role: payload.role || 'employee',
-    issuedAt: payload.iat,
-    expiresAt: payload.exp,
-  }
+  return sessionStore.resolveSession('admin', token)
 }
 
 function createOAuthState(returnTo = '/admin') {

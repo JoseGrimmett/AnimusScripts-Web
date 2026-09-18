@@ -133,7 +133,7 @@ const NavBar = () => {
   const userLabel = adminUser?.username || portalUser?.displayName || portalUser?.email || "User";
 
   const handleSignOut = async () => {
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       fetch("/api/admin/logout", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -141,6 +141,12 @@ const NavBar = () => {
       }),
       fetch("/api/portal/logout", { method: "POST", credentials: "include" }),
     ]);
+
+    if (results.some(result => result.status === 'rejected' || !result.value.ok)) {
+      emitAuthChanged();
+      emitToast({ message: 'Sign-out could not be completed. Please try again.', type: 'error' });
+      return;
+    }
 
     setAdminUser(null);
     setPortalUser(null);

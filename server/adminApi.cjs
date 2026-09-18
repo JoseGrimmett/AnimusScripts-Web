@@ -1,3 +1,5 @@
+const sessionStore = require('./sessionStore.cjs')
+const { withSessionAvailability } = require('./sessionHttp.cjs')
 const { enforceRateLimit } = require('./rateLimit.cjs')
 const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
@@ -87,17 +89,9 @@ function getCookieToken(req) {
   return cookies[sessionCookieName(SESSION_COOKIE_NAME)] || null
 }
 
-function safeVerifyAdminToken(token) {
-  try {
-    return verifyAdminToken(token)
-  } catch {
-    return null
-  }
-}
-
 function getAdminSession(req) {
   const cookieToken = getCookieToken(req)
-  return safeVerifyAdminToken(cookieToken)
+  return verifyAdminToken(cookieToken)
 }
 
 function setSessionCookie(res, token) {
@@ -222,13 +216,14 @@ async function handleAdminLogin(req, res) {
   let token
 
   try {
-    token = createAdminToken(user)
+    token = await createAdminToken(user, getCookieToken(req))
   } catch (error) {
-    console.error('[admin-auth] failed to create session token', error)
-    return sendJson(res, 500, { error: 'Admin auth secret is not configured' })
+    console.error('[security] session_creation_failed')
+    return sendJson(res, 503, { error: 'Authentication temporarily unavailable' })
   }
 
-  if (!await rateLimit.success()) return
+  if (!token) return sendJson(res, 401, { error: 'Invalid credentials' })
+  if (!await rateLimit.success()) { await sessionStore.revokeSession('admin', token); return }
   setSessionCookie(res, token)
   await writeAuditSafely({
     actorType: 'staff',
@@ -258,7 +253,7 @@ async function handleAdminSession(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -283,6 +278,7 @@ async function handleAdminLogout(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
+  await sessionStore.revokeSession('admin', getCookieToken(req))
   clearSessionCookie(res)
 
   return sendJson(res, 200, {
@@ -298,7 +294,7 @@ async function handleAdminSubmissions(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -327,7 +323,7 @@ async function handleAdminSubmissions(req, res) {
 async function handleAdminTickets(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -402,7 +398,7 @@ async function handleAdminTickets(req, res) {
 async function handleAdminUsers(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -415,7 +411,8 @@ async function handleAdminUsers(req, res) {
   if (req.method === 'GET') {
     const url = new URL(req.url, 'http://localhost')
     const limit = url.searchParams.get('limit') || 200
-    const users = await listAdminUsers(limit)
+    const states = await sessionStore.accountStates('admin')
+    const users = (await listAdminUsers(limit)).map(user => ({ ...user, disabled: Boolean(states[String(user.id)]) }))
     return sendJson(res, 200, {
       ok: true,
       count: users.length,
@@ -429,6 +426,16 @@ async function handleAdminUsers(req, res) {
     }
 
     const payload = parseBody(req.body)
+    if (payload.action) {
+      const { action, accountType = 'admin', userId } = payload
+      if (!['revoke_sessions', 'disable', 'enable'].includes(action) || !['admin', 'portal'].includes(accountType) || !/^[1-9]\d*$/.test(String(userId || ''))) {
+        return sendJson(res, 400, { error: 'Invalid account action' })
+      }
+      if (!await sessionStore.manageAccount(accountType, userId, action)) return sendJson(res, 404, { error: 'Account not found' })
+      await writeAuditSafely({ actorType: 'staff', actorId: session.username, action: `account_${action}`,
+        entityType: `${accountType}_user`, entityId: String(userId), ipAddress: getClientIp(req) })
+      return sendJson(res, 200, { ok: true })
+    }
     const user = await createOrUpdateAdminUser(payload.username, payload.password, payload.role)
 
     await writeAuditSafely({
@@ -450,7 +457,7 @@ async function handleAdminUsers(req, res) {
 async function handleAdminCrm(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -533,7 +540,7 @@ async function handleAdminCrm(req, res) {
 async function handleAdminCrmActions(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -622,7 +629,7 @@ async function handleAdminCrmActions(req, res) {
 async function handleAdminCrmActivity(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -660,7 +667,7 @@ async function handleAdminCrmActivity(req, res) {
 async function handleAdminDashboard(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getAdminSession(req)
+  const session = await getAdminSession(req)
   if (!session) return sendJson(res, 401, { error: 'Unauthorized' })
   if (!hasEmployeeAccess(session)) return sendJson(res, 403, { error: 'Employee access is required' })
   if (req.method !== 'GET') {
@@ -732,7 +739,7 @@ async function handleMicrosoftStart(req, res) {
     state = createOAuthState('/admin')
   } catch (error) {
     console.error('[admin-microsoft] failed to create oauth state', error)
-    return sendJson(res, 500, { error: 'Admin auth secret is not configured' })
+    return sendJson(res, 503, { error: 'Authentication temporarily unavailable' })
   }
 
   const params = new URLSearchParams({
@@ -863,18 +870,19 @@ async function handleMicrosoftCallback(req, res) {
   let sessionToken
 
   try {
-    sessionToken = createAdminToken(adminUser)
+    sessionToken = await createAdminToken(adminUser, getCookieToken(req))
   } catch (error) {
-    console.error('[admin-microsoft] failed to create session token', error)
-    return sendJson(res, 500, { error: 'Admin auth secret is not configured' })
+    console.error('[security] session_creation_failed')
+    return sendJson(res, 503, { error: 'Authentication temporarily unavailable' })
   }
 
+  if (!sessionToken) return sendJson(res, 403, { error: 'Microsoft sign-in is not permitted' })
   setSessionCookie(res, sessionToken)
 
   return redirect(res, statePayload.returnTo || '/admin')
 }
 
-module.exports = {
+const handlers = {
   handleAdminLogin,
   handleAdminLogout,
   handleAdminSession,
@@ -888,3 +896,5 @@ module.exports = {
   handleAdminDashboard,
   handleAdminSubmissions,
 }
+
+module.exports = Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, withSessionAvailability(handler)]))

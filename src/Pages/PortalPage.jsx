@@ -204,12 +204,14 @@ const PortalPage = () => {
 
   const handleSignOut = async () => {
     try {
-      await fetch("/api/portal/logout", {
+      const response = await fetch("/api/portal/logout", {
         method: "POST",
         credentials: "include",
       });
+      if (!response.ok) throw new Error('Sign-out failed');
     } catch {
-      // no-op
+      setStatus('Sign-out could not be completed. Please try again.');
+      return;
     }
 
     setUser(null);

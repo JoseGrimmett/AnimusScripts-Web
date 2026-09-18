@@ -809,7 +809,8 @@
 .admin-app-shell .user-admin-shell .submissions-label { display: grid; gap: 0.38rem; color: #8298a8; font-size: 0.7rem; }
 .admin-app-shell .user-admin-shell .submissions-input { min-height: 40px; padding: 0.55rem 0.65rem; }
 .admin-app-shell .user-chip-list { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-.admin-app-shell .user-chip { justify-content: start; gap: 0.6rem; padding: 0.65rem; border-radius: 0.55rem; background: #eef4f8; }
+.admin-app-shell .user-chip { justify-content: start; flex-wrap: wrap; gap: 0.6rem; padding: 0.65rem; border-radius: 0.55rem; background: #eef4f8; }
+.admin-app-shell .user-chip .btn { width: 100%; }
 .admin-app-shell .user-chip-avatar { width: 1.85rem; height: 1.85rem; display: grid; place-items: center; border-radius: 0.45rem; background: rgba(143, 196, 234, 0.1); color: #8fc4ea; font-size: 0.68rem; font-weight: 800; }
 .admin-app-shell .user-chip div { min-width: 0; }
 .admin-app-shell .user-chip strong,

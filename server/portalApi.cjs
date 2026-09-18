@@ -1,3 +1,5 @@
+const sessionStore = require('./sessionStore.cjs')
+const { withSessionAvailability } = require('./sessionHttp.cjs')
 const { enforceRateLimit } = require('./rateLimit.cjs')
 const { sessionCookieName, rejectUntrustedMutation } = require('./requestSecurity.cjs')
 const {
@@ -82,12 +84,13 @@ async function handlePortalSignup(req, res) {
     let token
 
     try {
-      token = createPortalToken(user)
+      token = await createPortalToken(user, parseCookies(req)[sessionCookieName(PORTAL_SESSION_COOKIE_NAME)])
     } catch (error) {
-      console.error('[portal-auth] failed to create session token during signup', error)
-      return sendJson(res, 500, { error: 'Portal auth secret is not configured' })
+      console.error('[security] session_creation_failed')
+      return sendJson(res, 503, { error: 'Authentication temporarily unavailable' })
     }
 
+    if (!token) return sendJson(res, 401, { error: 'Unable to sign in' })
     setPortalCookie(res, token)
 
     return sendJson(res, 200, {
@@ -124,13 +127,14 @@ async function handlePortalLogin(req, res) {
   let token
 
   try {
-    token = createPortalToken(user)
+    token = await createPortalToken(user, parseCookies(req)[sessionCookieName(PORTAL_SESSION_COOKIE_NAME)])
   } catch (error) {
-    console.error('[portal-auth] failed to create session token during login', error)
-    return sendJson(res, 500, { error: 'Portal auth secret is not configured' })
+    console.error('[security] session_creation_failed')
+    return sendJson(res, 503, { error: 'Authentication temporarily unavailable' })
   }
 
-  if (!await rateLimit.success()) return
+  if (!token) return sendJson(res, 401, { error: 'Invalid email or password' })
+  if (!await rateLimit.success()) { await sessionStore.revokeSession('portal', token); return }
   setPortalCookie(res, token)
 
   return sendJson(res, 200, {
@@ -151,7 +155,7 @@ async function handlePortalSession(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
-  const session = getPortalSession(req)
+  const session = await getPortalSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -176,6 +180,7 @@ async function handlePortalLogout(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
+  await sessionStore.revokeSession('portal', parseCookies(req)[sessionCookieName(PORTAL_SESSION_COOKIE_NAME)])
   clearPortalCookie(res)
 
   return sendJson(res, 200, {
@@ -186,7 +191,7 @@ async function handlePortalLogout(req, res) {
 async function handlePortalTickets(req, res) {
   if (rejectUntrustedMutation(req, res)) return
 
-  const session = getPortalSession(req)
+  const session = await getPortalSession(req)
 
   if (!session) {
     return sendJson(res, 401, { error: 'Unauthorized' })
@@ -275,10 +280,12 @@ async function handlePortalTickets(req, res) {
   return sendJson(res, 405, { error: 'Method not allowed' })
 }
 
-module.exports = {
+const handlers = {
   handlePortalLogin,
   handlePortalLogout,
   handlePortalSession,
   handlePortalSignup,
   handlePortalTickets,
 }
+
+module.exports = Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, withSessionAvailability(handler)]))
